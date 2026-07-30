@@ -27,3 +27,9 @@ slots/
 # YOLO-Gewichte: ladbar von ultralytics, nicht Teil des Projekts
 models/
 *.pt
+
+# Arduino-Kompilat (carsensor/build: 33 MB Binaerdateien und eine .map)
+build/
+*.bin
+*.elf
+*.map

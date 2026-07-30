@@ -5,6 +5,11 @@
 > [`server/`](server/README.md) — Flask + SQLite, für PythonAnywhere.
 > Die hier beschriebene Kamera-Erkennung kann später als *ein* Gateway mit
 > vielen virtuellen Sensoren an diesen Server melden.
+>
+> Die Hardware-Seite liegt daneben: [`carsensor/`](carsensor/carsensor.ino) —
+> ein einzelner Stellplatzsensor (ESP32-C3 + Magnetometer), der ein Auto an
+> der Störung des Erdmagnetfelds erkennt; [`espnow_cam/`](espnow_cam/README.md)
+> — die ESP32-Kamerastrecke über ESP-NOW.
 
 Quelle: <https://www.youtube.com/shorts/_jUIhPSRhks> — Drohnen-Draufsicht auf einen
 großen Parkplatz, 1080×1920, 29,97 fps, ~11 s. Die Drohne steht praktisch still,
