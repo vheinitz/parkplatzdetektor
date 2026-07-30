@@ -50,7 +50,7 @@ def test_gute_zeile():
 
 
 def test_kommentar_und_leerzeile():
-    assert gw.zerlege('# bereit 868.0 MHz\n') == ('kommentar', 'bereit 868.0 MHz')
+    assert gw.zerlege('# bereit 433.5 MHz\n') == ('kommentar', 'bereit 433.5 MHz')
     assert gw.zerlege('PONG carsensor-gateway 1')[0] == 'kommentar'
     assert gw.zerlege('\n') == ('leer', None)
 

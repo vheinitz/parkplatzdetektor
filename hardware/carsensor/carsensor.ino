@@ -43,7 +43,7 @@
  *                   i = Info, t = Selbsttest, f = LoRa-Meldung erzwingen
  *
  * MELDUNG AN DAS GATEWAY (optional, USE_LORA):
- *   Mit angeloetetem SX1276/RFM95 meldet der Sensor jeden Wechsel
+ *   Mit angeloetetem SX1278 (433 MHz) meldet der Sensor jeden Wechsel
  *   belegt/frei per LoRa an das Gateway, dazu alle 15 min ein Lebenszeichen.
  *   Verdrahtung und Protokoll stehen in ../../gateway/README.md. Ohne
  *   Funkmodul einfach USE_LORA auf 0 setzen -- dann bleibt es beim
@@ -87,7 +87,7 @@ HWCDC UsbSerial;
 #define LORA_WIEDERHOLUNGEN 3        // je Ereignis, es gibt keine Bestaetigung
 #define LORA_WIEDERHOL_MS   1500     // Grundabstand der Wiederholungen
 
-// SX1276/RFM95. GPIO 2, 8 und 9 bleiben frei -- Strapping-Pins, ein falscher
+// SX1278 (433 MHz). GPIO 2, 8 und 9 bleiben frei -- Strapping-Pins, ein falscher
 // Pegel beim Einschalten verhindert den Start. GPIO 4 und 5 hat das
 // Magnetometer.
 #define LORA_SCK   6
@@ -97,12 +97,17 @@ HWCDC UsbSerial;
 #define LORA_RST   3
 #define PIN_VBAT  -1                 // GPIO des Spannungsteilers, -1 = keiner
 
-#define LORA_FREQ     868E6          // Europa
+// SX1278 = 433-MHz-Baureihe (137..525 MHz). Nicht 868 -- das kann der Chip
+// gar nicht. 433,5 statt der ueblichen 433,92: dort sitzen Autoschluessel,
+// Funkthermometer und Garagentore, und die stoeren sonst dauernd.
+#define LORA_FREQ     433.5E6
 #define LORA_SF       7
 #define LORA_BW       125E3
 #define LORA_CR       5
 #define LORA_SYNCWORD 0x2A           // muss zum Gateway passen
-#define LORA_TX_DBM   17             // 2..20; mehr kostet Strom und Funkzeit
+// 10 dBm = 10 mW: die Obergrenze im 433-MHz-Band. Mehr kann der Chip, darf
+// aber nicht. Siehe ../../gateway/README.md.
+#define LORA_TX_DBM   10
 
 // Erst hier, nicht oben bei den uebrigen Includes: davor ist USE_LORA noch
 // nicht definiert, und die Bedingung waere immer falsch.
@@ -609,9 +614,10 @@ float unruhe() { return fabsf(bSchnell - bLangsam); }
 // uebliche Bauform fuer batteriebetriebene Einwegknoten.
 //
 // Funkzeit (Sendedauer): bei SF7/BW125 braucht ein Paket dieser Laenge rund
-// 60 ms. In Europa duerfen auf 868 MHz 1 % der Zeit gesendet werden, also
-// etwa 36 s je Stunde. Drei Wiederholungen sind 0,18 s -- selbst 100
-// Ereignisse pro Stunde blieben weit darunter.
+// 60 ms. Im 433-MHz-Band sind 10 % der Zeit erlaubt, also etwa 6 min je
+// Stunde. Drei Wiederholungen sind 0,18 s -- selbst 100 Ereignisse pro Stunde
+// blieben weit darunter. Bei SF12 waere ein Paket rund 25x laenger; auch das
+// reicht noch, aber dann lohnt das Nachrechnen.
 
 static uint16_t loraSeq = 0;
 static char     loraZuletzt = 0;          // zuletzt gemeldeter Zustand

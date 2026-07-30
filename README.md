@@ -48,12 +48,12 @@ ein Demo-Parkplatz).
 | Verwaltungsseite | fertig |
 | Magnetsensor: Erkennung belegt/frei | funktioniert am Tisch |
 | Gateway-Software auf dem Rechner | fertig, 23 Tests, gegen den Server durchgespielt |
-| LoRa-Sender und -Empfänger (Sketches) | geschrieben, **noch nie übersetzt und nie gefunkt** — es fehlt die Hardware |
+| LoRa-Sender und -Empfänger (Sketches) | übersetzen für den ESP32-C3, aber **noch nie gefunkt** — die Module sind unterwegs |
 | Kamera-Vorversuch | abgeschlossen, 490 Plätze in ~1,5 s |
 
 Die Rechnerseite des Wegs vom Sensor zum Server steht also und lässt sich mit
-einem Mitschnitt vorführen (`gateway.py --replay`). Was fehlt, sind zwei
-Funkmodule für 5 € und der erste Versuch damit. Bis dahin füttert weiterhin
+einem Mitschnitt vorführen (`gateway.py --replay`). Was fehlt, ist der erste
+Versuch mit den SX1278-Modulen auf 433 MHz. Bis dahin füttert weiterhin
 `server/simulate_gateway.py` den Server — der merkt den Unterschied nicht, für
 ihn ist beides derselbe `POST /api/v1/events`.
 
