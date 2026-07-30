@@ -10,11 +10,13 @@
  * alles davon. Faellt die Verbindung zum Server aus, sammelt der Rechner --
  * nicht dieser Sketch.
  *
- * Funkmodul: SX1276/RFM95 (868 MHz, Europa), Bibliothek "LoRa" von
- * Sandeep Mistry:   arduino-cli lib install LoRa
+ * Funkmodul: SX1278 (433 MHz), Bibliothek "LoRa" von Sandeep Mistry:
+ *   arduino-cli lib install LoRa
+ * Die Bibliothek bedient SX1276 bis SX1278 gleich -- die Chips unterscheiden
+ * sich im Frequenzbereich, nicht in den Registern.
  *
  * Verdrahtung (ESP32-C3, frei waehlbar -- der C3 routet SPI ueber die Matrix):
- *   RFM95        ESP32-C3
+ *   SX1278       ESP32-C3
  *   VCC   ->     3V3          ACHTUNG: 3,3 V, das Modul ist nicht 5-V-fest
  *   GND   ->     GND
  *   SCK   ->     GPIO 6
@@ -23,7 +25,8 @@
  *   NSS   ->     GPIO 10
  *   RST   ->     GPIO 3
  *   DIO0  ->     nicht noetig (siehe unten)
- *   ANT   ->     8,6 cm Draht genuegt fuer erste Versuche
+ *   ANT   ->     mitgelieferte Antenne. Ersatz: 17,3 cm Draht (Viertel der
+ *                Wellenlaenge bei 433 MHz). NIE ohne Antenne senden.
  *
  * GPIO 2, 8 und 9 bleiben frei: das sind Strapping-Pins. Zieht das Funkmodul
  * einen davon beim Einschalten auf den falschen Pegel, startet der C3 nicht
@@ -37,7 +40,7 @@
  * Boards mit fest verbautem Funkmodul -- dann nur diese Werte eintragen:
  *   Heltec WiFi LoRa 32 V2:  NSS 18, RST 14, DIO0 26, SCK 5, MISO 19, MOSI 27
  *   TTGO LoRa32 V1:          NSS 18, RST 14, DIO0 26, SCK 5, MISO 19, MOSI 27
- *   Arduino Uno + RFM95:     NSS 10, RST  9, DIO0  2, SPI liegt auf 13/12/11
+ *   Arduino Uno + SX1278:    NSS 10, RST  9, DIO0  2, SPI liegt auf 13/12/11
  *
  * Serielle Ausgabe, eine Zeile je Ereignis:
  *   RX,PS1,<knoten>,<F|B|?>,<mV>,<seq>,<crc>,<rssi>,<snr>
@@ -61,7 +64,9 @@
 #define PIN_RST   3
 #define PIN_DIO0 -1            // -1 = pollen statt Interrupt
 
-#define LORA_FREQ     868E6    // Europa. USA: 915E6, Asien teils 433E6
+// SX1278 = 433-MHz-Baureihe. 433,5 statt 433,92, weil dort Autoschluessel und
+// Funkthermometer sitzen. Muss mit dem Sensor uebereinstimmen.
+#define LORA_FREQ     433.5E6
 #define LORA_SF       7        // 7 = schnell und stromsparend, 12 = weiteste Reichweite
 #define LORA_BW       125E3
 #define LORA_CR       5        // 4/5
