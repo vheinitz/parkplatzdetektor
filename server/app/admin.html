@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parkassistent — Verwaltung</title>
+<link rel="icon" href="icon.svg">
+<style>
+  /* Bewusst nüchtern und dicht: hier wird gearbeitet, nicht navigiert. */
+  :root {
+    --bg: #f4f6f9; --card: #fff; --fg: #10151c; --dim: #5c6773; --line: #dde3ea;
+    --free: #0a8f4a; --busy: #b64a00; --unknown: #8a94a0; --accent: #1667d4; --rot: #c02020;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10151c; --card: #19212b; --fg: #eef2f6; --dim: #93a1b0; --line: #2a3542;
+      --free: #2bd07a; --busy: #ff9d4d; --unknown: #6b7683; --accent: #4d9dff; --rot: #ff6b6b;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 14px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  h1 { font-size: 17px; margin: 0; }
+  button, input, select {
+    font: inherit; color: var(--fg); background: var(--card);
+    border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px;
+  }
+  button { cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  button.gefahr { color: var(--rot); border-color: var(--rot); }
+  button:disabled { opacity: .5; cursor: default; }
+
+  /* --- Anmeldung --- */
+  #login { max-width: 420px; margin: 12vh auto; padding: 24px; background: var(--card);
+           border: 1px solid var(--line); border-radius: 14px; }
+  #login p { color: var(--dim); font-size: 13px; }
+  #login input { width: 100%; margin: 12px 0; }
+  #login button { width: 100%; }
+  #loginfehler { color: var(--rot); font-size: 13px; min-height: 18px; }
+
+  /* --- Kopf --- */
+  header { position: sticky; top: 0; z-index: 3; background: var(--bg);
+           border-bottom: 1px solid var(--line); padding: 12px 16px; }
+  .kopf { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .kopf .weg { margin-left: auto; display: flex; gap: 8px; }
+  #kacheln { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .kachel { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+            padding: 6px 12px; min-width: 84px; }
+  .kachel b { display: block; font-size: 19px; line-height: 1.2; }
+  .kachel span { color: var(--dim); font-size: 11.5px; text-transform: uppercase;
+                 letter-spacing: .4px; }
+  #filter { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  #filter label { color: var(--dim); font-size: 13px; display: flex; align-items: center; gap: 5px; }
+  #suche { min-width: 200px; }
+  #stand { color: var(--dim); font-size: 12.5px; margin-left: auto; }
+
+  /* --- Tabelle --- */
+  .huelle { overflow-x: auto; padding: 12px 16px 80px; }
+  table { border-collapse: collapse; width: 100%; min-width: 900px; }
+  th, td { text-align: left; padding: 7px 9px; border-bottom: 1px solid var(--line);
+           white-space: nowrap; }
+  th { position: sticky; top: 0; background: var(--bg); font-size: 12px; color: var(--dim);
+       cursor: pointer; user-select: none; }
+  th.aktiv { color: var(--accent); }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  tr.versteckt td:not(.tun) { opacity: .45; }
+  td.nummer { font-variant-numeric: tabular-nums; }
+  .kennung { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px; }
+  .marke { font-weight: 600; font-size: 12px; padding: 2px 8px; border-radius: 20px;
+           border: 1px solid currentColor; }
+  .frei { color: var(--free); } .belegt { color: var(--busy); } .unbekannt { color: var(--unknown); }
+  .alt { color: var(--busy); font-weight: 600; }
+  td.tun { text-align: right; }
+  td.tun button { padding: 4px 9px; font-size: 12.5px; margin-left: 4px; }
+  #leer { padding: 40px; text-align: center; color: var(--dim); }
+
+  /* --- Dialog --- */
+  dialog { border: none; border-radius: 14px; padding: 20px; width: 92%; max-width: 420px;
+           background: var(--card); color: var(--fg); }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  dialog h2 { margin: 0 0 14px; font-size: 16px; }
+  .feld { margin-bottom: 10px; }
+  .feld label { display: block; font-size: 12px; color: var(--dim); margin-bottom: 3px; }
+  .feld input, .feld select { width: 100%; }
+  .zwei { display: flex; gap: 10px; }
+  .zwei .feld { flex: 1; }
+  .knopfreihe { display: flex; gap: 8px; margin-top: 16px; }
+  .knopfreihe .luecke { flex: 1; }
+  #dlgfehler { color: var(--rot); font-size: 13px; min-height: 18px; margin-top: 8px; }
+</style>
+</head>
+<body>
+
+<div id="login">
+  <h1>Verwaltung</h1>
+  <p>Anmeldung für die Sensorverwaltung.</p>
+  <input id="benutzer" placeholder="Benutzer" autocomplete="username">
+  <input id="passwort" type="password" placeholder="Passwort" autocomplete="current-password">
+  <div id="loginfehler"></div>
+  <button class="primary" id="anmelden">Anmelden</button>
+</div>
+
+<div id="ui" hidden>
+  <header>
+    <div class="kopf">
+      <h1>Sensorverwaltung</h1>
+      <div class="weg">
+        <button id="neu" class="primary">+ Sensor</button>
+        <button id="jetzt">Aktualisieren</button>
+        <button id="abmelden">Abmelden</button>
+      </div>
+    </div>
+    <div id="kacheln"></div>
+    <div id="filter">
+      <input id="suche" placeholder="Suche: Kennung, Name, Ort">
+      <select id="fstatus">
+        <option value="">Status: alle</option>
+        <option value="free">nur frei</option>
+        <option value="occupied">nur belegt</option>
+        <option value="unknown">nur unbekannt</option>
+      </select>
+      <select id="fort"><option value="">Ort: alle</option></select>
+      <label><input type="checkbox" id="falt"> nur veraltete</label>
+      <label><input type="checkbox" id="fversteckt" checked> versteckte zeigen</label>
+      <label><input type="checkbox" id="fauto" checked> alle 10 s neu laden</label>
+      <span id="stand"></span>
+    </div>
+  </header>
+
+  <div class="huelle">
+    <table>
+      <thead><tr>
+        <th data-sort="sensor_id">Kennung</th>
+        <th data-sort="name">Name</th>
+        <th data-sort="lot">Ort</th>
+        <th data-sort="status">Status</th>
+        <th data-sort="age_s">Meldung</th>
+        <th data-sort="street_bearing">Fahrbahn</th>
+        <th data-sort="lat">Position</th>
+        <th data-sort="disabled">In App</th>
+        <th></th>
+      </tr></thead>
+      <tbody id="zeilen"></tbody>
+    </table>
+    <div id="leer" hidden>Keine Sensoren zu diesem Filter.</div>
+    <div style="margin-top:14px; display:flex; gap:8px; align-items:center; flex-wrap:wrap">
+      <span style="color:var(--dim)">Angezeigte testweise schalten:</span>
+      <button id="allefrei">alle frei</button>
+      <button id="allebelegt">alle belegt</button>
+    </div>
+  </div>
+</div>
+
+<dialog id="dlg">
+  <h2 id="dlgtitel">Sensor</h2>
+  <div class="feld">
+    <label for="f_id">Kennung (sensor_id)</label>
+    <input id="f_id" class="kennung" placeholder="z. B. MFRS-R03">
+  </div>
+  <div class="feld">
+    <label for="f_name">Name</label>
+    <input id="f_name" placeholder="z. B. Lücke 3 rechts">
+  </div>
+  <div class="feld">
+    <label for="f_lot">Ort / Straße</label>
+    <input id="f_lot" placeholder="z. B. Mikroforum-Ring">
+  </div>
+  <div class="zwei">
+    <div class="feld"><label for="f_lat">Breite</label><input id="f_lat" inputmode="decimal"></div>
+    <div class="feld"><label for="f_lng">Länge</label><input id="f_lng" inputmode="decimal"></div>
+  </div>
+  <div class="zwei">
+    <div class="feld">
+      <label for="f_bear">Fahrbahnrichtung (Grad, leer = keine)</label>
+      <input id="f_bear" inputmode="decimal" placeholder="0 = Nord, 90 = Ost">
+    </div>
+    <div class="feld">
+      <label for="f_dis">In der App</label>
+      <select id="f_dis"><option value="0">sichtbar</option><option value="1">versteckt (Test)</option></select>
+    </div>
+  </div>
+  <div id="dlgfehler"></div>
+  <div class="knopfreihe">
+    <button id="loeschen" class="gefahr">Löschen</button>
+    <span class="luecke"></span>
+    <button id="abbrechen">Abbrechen</button>
+    <button id="speichern" class="primary">Speichern</button>
+  </div>
+</dialog>
+
+<script>
+// Die Seite selbst enthaelt kein Geheimnis -- sie ist eine Huelle. Geschuetzt
+// sind die Daten: jede Anfrage traegt den Admin-Schluessel im Kopf, und ohne
+// gueltigen Schluessel antwortet der Server mit 401. Der Schluessel liegt nur
+// im Browser des Benutzers, nie im ausgelieferten HTML.
+const API = '/api/v1';
+const SCHLUESSEL_KEY = 'parkadmin';
+const $ = s => document.querySelector(s);
+
+let key = '';
+let spots = [];
+let sortSpalte = 'sensor_id', sortAb = false;
+let timer = null;
+
+// ------------------------------------------------------------- Anmeldung ---
+try { key = localStorage.getItem(SCHLUESSEL_KEY) || ''; } catch (e) { }
+
+// Der Server tauscht Benutzer/Passwort gegen den Admin-Schluessel ein. Ab dann
+// laeuft alles wie zuvor ueber den Kopf X-API-Key.
+async function anmelden(benutzer, passwort) {
+  $('#loginfehler').textContent = '';
+  try {
+    const r = await fetch(`${API}/login`, {
+      method: 'POST', cache: 'no-store',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: benutzer, password: passwort }),
+    });
+    if (r.status === 401) { $('#loginfehler').textContent = 'Benutzer oder Passwort falsch.'; return; }
+    if (!r.ok) { $('#loginfehler').textContent = 'Server antwortet mit HTTP ' + r.status; return; }
+    key = (await r.json()).token;
+  } catch (e) {
+    $('#loginfehler').textContent = 'Server nicht erreichbar.';
+    return;
+  }
+  return starten();
+}
+
+// Getrennt, damit ein gemerkter Schluessel ohne erneute Anmeldung greift.
+async function starten() {
+  try { localStorage.setItem(SCHLUESSEL_KEY, key); } catch (e) { }
+  $('#login').hidden = true;
+  $('#ui').hidden = false;
+  $('#passwort').value = '';
+  await laden();
+  autoSetzen();
+}
+
+function abmelden() {
+  key = '';
+  try { localStorage.removeItem(SCHLUESSEL_KEY); } catch (e) { }
+  clearInterval(timer);
+  $('#ui').hidden = true;
+  $('#login').hidden = false;
+  $('#passwort').value = '';
+  $('#benutzer').focus();
+}
+
+$('#anmelden').onclick = () => anmelden($('#benutzer').value.trim(), $('#passwort').value);
+for (const s of ['#benutzer', '#passwort']) {
+  $(s).onkeydown = e => { if (e.key === 'Enter') $('#anmelden').click(); };
+}
+$('#abmelden').onclick = abmelden;
+
+// ------------------------------------------------------------ API-Zugriff --
+async function api(pfad, opt = {}) {
+  const r = await fetch(API + pfad, {
+    ...opt, cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', 'X-API-Key': key },
+  });
+  if (r.status === 401) { abmelden(); throw new Error('Schlüssel abgelehnt'); }
+  if (!r.ok) {
+    let d = '';
+    try { d = (await r.json()).error || ''; } catch (e) { }
+    throw new Error('HTTP ' + r.status + (d ? ' — ' + d : ''));
+  }
+  return r.status === 204 ? null : r.json();
+}
+
+// Statuswechsel gehen bewusst über den Gateway-Endpunkt statt über PATCH:
+// so laufen Testschaltungen durch dieselbe Verarbeitung wie echte Meldungen
+// und tauchen in der Historie auf -- erkennbar am gateway_id "admin-ui".
+async function melden(eintraege) {
+  if (!eintraege.length) return;
+  const res = await api('/events', {
+    method: 'POST',
+    body: JSON.stringify({ gateway_id: 'admin-ui', events: eintraege }),
+  });
+  const schlecht = res.results.filter(r => r.result !== 'ok');
+  if (schlecht.length) alert(schlecht.length + ' Meldung(en) abgelehnt: ' + schlecht[0].result);
+}
+
+// ----------------------------------------------------------------- Laden ---
+async function laden() {
+  try {
+    // Die Liste wird bei 1000 gedeckelt; für einen Prototyp reicht das weit.
+    const d = await api('/spots?limit=1000');
+    spots = d.spots;
+    if (d.count > spots.length) {
+      $('#stand').textContent = `nur ${spots.length} von ${d.count} geladen`;
+    }
+    zeichne();
+  } catch (e) {
+    $('#stand').textContent = 'Fehler: ' + e.message;
+  }
+}
+
+function autoSetzen() {
+  clearInterval(timer);
+  if ($('#fauto').checked) timer = setInterval(() => { if (!$('#dlg').open) laden(); }, 10000);
+}
+
+// ------------------------------------------------------------- Anzeigen ----
+function gefiltert() {
+  const q = $('#suche').value.trim().toLowerCase();
+  const st = $('#fstatus').value, ort = $('#fort').value;
+  const nurAlt = $('#falt').checked, mitVersteckt = $('#fversteckt').checked;
+  let liste = spots.filter(s =>
+    (!q || (s.sensor_id + ' ' + (s.name || '') + ' ' + (s.lot || '')).toLowerCase().includes(q)) &&
+    (!st || s.status === st) &&
+    (!ort || s.lot === ort) &&
+    (!nurAlt || s.stale !== false) &&
+    (mitVersteckt || !s.disabled));
+
+  const v = sortAb ? -1 : 1;
+  liste.sort((a, b) => {
+    const x = a[sortSpalte], y = b[sortSpalte];
+    if (x == null && y == null) return 0;
+    if (x == null) return 1;                 // Leerwerte ans Ende, in beide Richtungen
+    if (y == null) return -1;
+    return (typeof x === 'number' ? x - y : String(x).localeCompare(String(y))) * v;
+  });
+  return liste;
+}
+
+function zeichne() {
+  const liste = gefiltert();
+
+  // Kacheln immer über den gesamten Bestand, nicht über den Filter --
+  // sonst zeigt die Übersicht das an, was man gerade herausgesucht hat.
+  const z = { total: spots.length, free: 0, occupied: 0, unknown: 0, stale: 0, hidden: 0 };
+  for (const s of spots) {
+    z[s.status]++;
+    if (s.stale !== false) z.stale++;
+    if (s.disabled) z.hidden++;
+  }
+  $('#kacheln').innerHTML = [
+    ['Sensoren', z.total, ''], ['frei', z.free, 'frei'], ['belegt', z.occupied, 'belegt'],
+    ['unbekannt', z.unknown, 'unbekannt'], ['ohne Meldung', z.stale, z.stale ? 'belegt' : ''],
+    ['versteckt', z.hidden, ''],
+  ].map(([t, n, k]) => `<div class="kachel"><b class="${k}">${n}</b><span>${t}</span></div>`).join('');
+
+  const orte = [...new Set(spots.map(s => s.lot).filter(Boolean))].sort();
+  const sel = $('#fort'), alt = sel.value;
+  sel.innerHTML = '<option value="">Ort: alle</option>' +
+    orte.map(o => `<option${o === alt ? ' selected' : ''}>${esc(o)}</option>`).join('');
+
+  document.querySelectorAll('th[data-sort]').forEach(th =>
+    th.classList.toggle('aktiv', th.dataset.sort === sortSpalte));
+
+  $('#leer').hidden = liste.length > 0;
+  $('#zeilen').innerHTML = liste.map(zeile).join('');
+  $('#stand').textContent = `${liste.length} von ${spots.length} · Stand ${uhrzeit()}`;
+}
+
+function zeile(s) {
+  const marke = { free: 'frei', occupied: 'belegt', unknown: 'unbekannt' }[s.status];
+  const klasse = { free: 'frei', occupied: 'belegt', unknown: 'unbekannt' }[s.status];
+  return `<tr data-id="${esc(s.sensor_id)}" class="${s.disabled ? 'versteckt' : ''}">
+    <td class="kennung">${esc(s.sensor_id)}</td>
+    <td>${esc(s.name || '—')}</td>
+    <td>${esc(s.lot || '—')}</td>
+    <td><span class="marke ${klasse}">${marke}</span></td>
+    <td class="nummer ${s.stale !== false ? 'alt' : ''}">${alter(s.age_s)}</td>
+    <td class="nummer">${s.street_bearing == null ? '—' : Math.round(s.street_bearing) + '°'}</td>
+    <td class="nummer">${s.lat.toFixed(5)}, ${s.lng.toFixed(5)}</td>
+    <td><button data-tu="sicht">${s.disabled ? 'versteckt' : 'sichtbar'}</button></td>
+    <td class="tun">
+      <button data-tu="frei" ${s.status === 'free' ? 'disabled' : ''}>frei</button>
+      <button data-tu="belegt" ${s.status === 'occupied' ? 'disabled' : ''}>belegt</button>
+      <button data-tu="bearbeiten">…</button>
+    </td>
+  </tr>`;
+}
+
+function alter(s) {
+  if (s == null) return 'nie';
+  if (s < 90) return Math.round(s) + ' s';
+  if (s < 5400) return Math.round(s / 60) + ' min';
+  if (s < 172800) return Math.round(s / 3600) + ' h';
+  return Math.round(s / 86400) + ' d';
+}
+function uhrzeit() { return new Date().toLocaleTimeString('de-DE'); }
+function esc(t) { return String(t).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+
+// ---------------------------------------------------------------- Aktionen -
+$('#zeilen').onclick = async e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  const id = e.target.closest('tr').dataset.id;
+  const s = spots.find(x => x.sensor_id === id);
+  b.disabled = true;
+  try {
+    if (b.dataset.tu === 'frei') await melden([{ sensor_id: id, status: 'free' }]);
+    else if (b.dataset.tu === 'belegt') await melden([{ sensor_id: id, status: 'occupied' }]);
+    else if (b.dataset.tu === 'sicht') {
+      await api('/spots/' + encodeURIComponent(id), {
+        method: 'PATCH', body: JSON.stringify({ disabled: !s.disabled }),
+      });
+    } else if (b.dataset.tu === 'bearbeiten') { oeffneDialog(s); return; }
+    await laden();
+  } catch (err) {
+    alert(err.message);
+    b.disabled = false;
+  }
+};
+
+$('#allefrei').onclick = () => alleSchalten('free');
+$('#allebelegt').onclick = () => alleSchalten('occupied');
+async function alleSchalten(status) {
+  const liste = gefiltert();
+  if (!liste.length) return;
+  if (!confirm(`${liste.length} angezeigte Sensoren auf "${status}" setzen?`)) return;
+  try {
+    await melden(liste.map(s => ({ sensor_id: s.sensor_id, status })));
+    await laden();
+  } catch (e) { alert(e.message); }
+}
+
+['#suche', '#fstatus', '#fort', '#falt', '#fversteckt'].forEach(sel => {
+  $(sel).oninput = zeichne;
+  $(sel).onchange = zeichne;
+});
+$('#fauto').onchange = autoSetzen;
+$('#jetzt').onclick = laden;
+document.querySelectorAll('th[data-sort]').forEach(th => th.onclick = () => {
+  const s = th.dataset.sort;
+  sortAb = (s === sortSpalte) ? !sortAb : false;
+  sortSpalte = s;
+  zeichne();
+});
+
+// ----------------------------------------------------------------- Dialog --
+const dlg = $('#dlg');
+let bearbeitet = null;        // null = neu anlegen
+
+function oeffneDialog(s) {
+  bearbeitet = s || null;
+  $('#dlgtitel').textContent = s ? 'Sensor bearbeiten' : 'Sensor anlegen';
+  $('#f_id').value = s ? s.sensor_id : '';
+  $('#f_id').disabled = !!s;                 // Kennung ist der Schlüssel, nicht änderbar
+  $('#f_name').value = s && s.name || '';
+  $('#f_lot').value = s && s.lot || '';
+  $('#f_lat').value = s ? s.lat : '';
+  $('#f_lng').value = s ? s.lng : '';
+  $('#f_bear').value = s && s.street_bearing != null ? s.street_bearing : '';
+  $('#f_dis').value = s && s.disabled ? '1' : '0';
+  $('#loeschen').hidden = !s;
+  $('#dlgfehler').textContent = '';
+  dlg.showModal();
+}
+
+$('#neu').onclick = () => oeffneDialog(null);
+$('#abbrechen').onclick = () => dlg.close();
+
+$('#speichern').onclick = async () => {
+  const zahl = v => { const t = String(v).trim().replace(',', '.'); return t === '' ? null : parseFloat(t); };
+  const koerper = {
+    name: $('#f_name').value.trim() || null,
+    lot: $('#f_lot').value.trim() || null,
+    lat: zahl($('#f_lat').value),
+    lng: zahl($('#f_lng').value),
+    street_bearing: zahl($('#f_bear').value),
+    disabled: $('#f_dis').value === '1',
+  };
+  if (koerper.lat == null || koerper.lng == null || isNaN(koerper.lat) || isNaN(koerper.lng)) {
+    $('#dlgfehler').textContent = 'Breite und Länge sind Pflicht.';
+    return;
+  }
+  try {
+    if (bearbeitet) {
+      await api('/spots/' + encodeURIComponent(bearbeitet.sensor_id),
+                { method: 'PATCH', body: JSON.stringify(koerper) });
+    } else {
+      const id = $('#f_id').value.trim();
+      if (!id) { $('#dlgfehler').textContent = 'Kennung ist Pflicht.'; return; }
+      await api('/spots', { method: 'POST', body: JSON.stringify({ sensor_id: id, ...koerper }) });
+    }
+    dlg.close();
+    await laden();
+  } catch (e) {
+    $('#dlgfehler').textContent = e.message;
+  }
+};
+
+$('#loeschen').onclick = async () => {
+  if (!bearbeitet) return;
+  if (!confirm(`Sensor ${bearbeitet.sensor_id} wirklich löschen?`)) return;
+  try {
+    await api('/spots/' + encodeURIComponent(bearbeitet.sensor_id), { method: 'DELETE' });
+    dlg.close();
+    await laden();
+  } catch (e) { $('#dlgfehler').textContent = e.message; }
+};
+
+// Mit gemerktem Schlüssel direkt hinein, sonst Anmeldemaske. Ist der Schlüssel
+// nicht mehr gültig, wirft die erste Anfrage in laden() zurück auf die Maske.
+if (key) starten(); else $('#benutzer').focus();
+</script>
+</body>
+</html>

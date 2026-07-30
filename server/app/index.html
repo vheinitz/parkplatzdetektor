@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10151c">
+<title>Parkassistent</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="stylesheet" href="vendor/leaflet.css">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<style>
+  /* Mobil zuerst, grosse Tippflaechen, hoher Kontrast -- die Anzeige wird im
+     Auto bei Sonnenlicht und mit einer Hand bedient. */
+  :root {
+    --bg: #f4f6f9; --card: #fff; --fg: #10151c; --dim: #5c6773;
+    --line: #dde3ea; --free: #0a8f4a; --accent: #1667d4; --warn: #b64a00;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #10151c; --card: #19212b; --fg: #eef2f6; --dim: #93a1b0;
+      --line: #2a3542; --free: #2bd07a; --accent: #4d9dff; --warn: #ff9d4d;
+    }
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    padding: env(safe-area-inset-top) 0 calc(env(safe-area-inset-bottom) + 84px);
+  }
+  header {
+    position: sticky; top: 0; z-index: 5; background: var(--bg);
+    border-bottom: 1px solid var(--line); padding: 14px 16px 10px;
+  }
+  h1 { margin: 0; font-size: 19px; letter-spacing: -.2px; }
+  #sub { color: var(--dim); font-size: 13px; margin-top: 2px; min-height: 18px; }
+  #radius { display: flex; gap: 6px; margin-top: 12px; }
+  #radius button {
+    flex: 1; padding: 9px 0; font-size: 14px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--dim);
+    border-radius: 9px;
+  }
+  #radius button[aria-pressed="true"] {
+    border-color: var(--accent); color: var(--accent); background: transparent;
+  }
+  /* Ziel-Wächter: bleibt sichtbar, während man unterwegs ist. */
+  #ziel[hidden] { display: none; }
+  #ziel {
+    display: flex; align-items: center; gap: 10px; margin: 12px 16px 0;
+    padding: 11px 12px; border-radius: 12px; border: 1px solid;
+  }
+  #ziel.ok   { border-color: var(--free); background: color-mix(in srgb, var(--free) 12%, transparent); }
+  #ziel.weg  { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 14%, transparent); }
+  .ztext { flex: 1; min-width: 0; line-height: 1.3; }
+  .ztext b { display: block; font-size: 14px; }
+  .ztext span { font-size: 12.5px; color: var(--dim); display: block;
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .zbtn {
+    flex: none; padding: 9px 12px; font: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; border-radius: 9px; border: 1px solid var(--line);
+    background: var(--card); color: var(--fg);
+  }
+  .zbtn.x { padding: 9px 11px; color: var(--dim); }
+  /* Karte: Übersicht, nicht Hauptbedienung. Die Liste bleibt der Weg zum Ziel. */
+  #mapwrap[hidden] { display: none; }
+  #mapwrap {
+    position: relative; height: 230px; margin: 12px 16px 0; overflow: hidden;
+    border: 1px solid var(--line); border-radius: 14px; background: var(--card);
+  }
+  #map { height: 100%; background: var(--card); }
+  @media (prefers-color-scheme: dark) {
+    /* Es gibt keine dunklen OSM-Kacheln ohne fremden Dienst -- also umfärben. */
+    .leaflet-tile-pane { filter: invert(1) hue-rotate(180deg) brightness(.92) contrast(.88); }
+  }
+  #recenter {
+    position: absolute; right: 10px; bottom: 10px; z-index: 500;
+    width: 38px; height: 38px; border-radius: 10px; cursor: pointer;
+    border: 1px solid var(--line); background: var(--card); color: var(--fg);
+    font-size: 17px; line-height: 1; box-shadow: 0 1px 4px rgba(0,0,0,.25);
+  }
+  #recenter[hidden] { display: none; }
+  .pin {
+    background: var(--free); color: #fff; border: 2px solid #fff; border-radius: 50%;
+    font: 700 13px/22px system-ui, sans-serif; text-align: center;
+    box-shadow: 0 1px 4px rgba(0,0,0,.4);
+  }
+  .leaflet-container { font: inherit; }
+  .leaflet-control-attribution { font-size: 10px; }
+  main { padding: 12px 16px; }
+  .rank {
+    display: inline-block; min-width: 17px; height: 17px; border-radius: 50%;
+    background: var(--free); color: #fff; font: 700 11px/17px system-ui, sans-serif;
+    text-align: center; margin-right: 7px; vertical-align: 1px;
+  }
+  .old .rank { background: var(--warn); }
+  .spot {
+    display: flex; align-items: center; gap: 14px; width: 100%; text-align: left;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 10px; color: inherit; font: inherit;
+    cursor: pointer;
+  }
+  .spot:active { transform: scale(.985); }
+  .dist { font-size: 22px; font-weight: 700; min-width: 78px; letter-spacing: -.5px; }
+  .meta { flex: 1; min-width: 0; }
+  /* display:block ist nötig -- auf Inline-Spans wirkt text-overflow nicht. */
+  .name { display: block; font-weight: 600;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* Einzeilig halten: lange Parkplatznamen sollen die Zeilenhöhe nicht
+     sprengen, sonst rutscht die Altersangabe aus der Karte. */
+  .sub {
+    display: block; color: var(--dim); font-size: 13px; margin-top: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .go { color: var(--accent); font-size: 26px; font-weight: 300; }
+  .dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--free); margin-right: 6px; vertical-align: 1px;
+  }
+  .old .dot { background: var(--warn); }
+  #msg { color: var(--dim); text-align: center; padding: 44px 24px; line-height: 1.6; }
+  #msg b { color: var(--fg); display: block; margin-bottom: 6px; font-size: 17px; }
+  #bar {
+    position: fixed; left: 0; right: 0; bottom: 0; display: flex; gap: 10px;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: var(--card); border-top: 1px solid var(--line);
+  }
+  #bar button {
+    flex: 1; padding: 13px 0; font-size: 15px; font-weight: 600; cursor: pointer;
+    border-radius: 11px; border: 1px solid var(--line);
+    background: transparent; color: var(--fg);
+  }
+  #bar #reload { background: var(--accent); border-color: var(--accent); color: #fff; }
+  dialog {
+    border: none; border-radius: 16px; padding: 20px; max-width: 320px; width: 88%;
+    background: var(--card); color: var(--fg);
+  }
+  dialog::backdrop { background: rgba(0,0,0,.5); }
+  dialog input {
+    width: 100%; padding: 11px; margin: 10px 0 4px; font: inherit;
+    border: 1px solid var(--line); border-radius: 9px;
+    background: var(--bg); color: var(--fg);
+  }
+  dialog label { font-size: 13px; color: var(--dim); }
+  .row { display: flex; gap: 8px; margin-top: 16px; }
+  .row button { flex: 1; padding: 11px; font: inherit; font-weight: 600; cursor: pointer;
+                border-radius: 9px; border: 1px solid var(--line); background: transparent;
+                color: var(--fg); }
+  .row button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Freie Parkplätze</h1>
+  <div id="sub">Standort wird bestimmt …</div>
+  <div id="radius"></div>
+</header>
+
+<div id="ziel" hidden></div>
+
+<div id="mapwrap">
+  <div id="map"></div>
+  <button id="recenter" title="Auf Standort und nächste Plätze zentrieren" hidden>⌖</button>
+</div>
+
+<main><div id="msg">Einen Moment …</div></main>
+
+<div id="bar">
+  <button id="manual">Standort setzen</button>
+  <button id="reload">Aktualisieren</button>
+</div>
+
+<dialog id="dlg">
+  <b>Standort von Hand setzen</b>
+  <label for="coords">Breite, Länge</label>
+  <input id="coords" inputmode="decimal" placeholder="48.1351, 11.5820">
+  <label for="kurs">Fahrtrichtung in Grad (leer = aus)</label>
+  <input id="kurs" inputmode="decimal" placeholder="0 = Nord, 90 = Ost">
+  <label>Ohne GPS oder zum Testen der Demo-Daten.</label>
+  <div class="row">
+    <button id="demo">Demo-Parkplatz</button>
+    <button id="ok" class="primary">Übernehmen</button>
+  </div>
+</dialog>
+
+<script src="vendor/leaflet.js"></script>
+<script>
+// Die App macht bewusst keine eigene Navigation: sie zeigt die Liste und eine
+// Uebersichtskarte, und beim Antippen uebernimmt die Standard-Navi-App des
+// Systems genau ein Ziel.
+const API = '/api/v1';
+const DEMO = { lat: 48.1351, lng: 11.5820 };   // Mittelpunkt der Seed-Daten
+const RADIEN = [200, 500, 1000, 2000];
+const AUF_KARTE = 10;                          // so viele Pins zeigt die Karte
+const IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+let pos = null;          // {lat, lng, genau, kurs}
+let radius = 500;
+let holen = null;        // laufende Anfrage, damit sich zwei nicht ueberholen
+let letzteSpots = [];    // fuer den Ersatzvorschlag des Ziel-Waechters
+let kursManuell = null;  // Fahrtrichtung von Hand, zum Vorfuehren im Stand
+
+const $ = s => document.querySelector(s);
+const main = $('main'), sub = $('#sub');
+
+// ---------------------------------------------------------------- Radius ---
+const rBox = $('#radius');
+RADIEN.forEach(r => {
+  const b = document.createElement('button');
+  b.textContent = r >= 1000 ? (r / 1000) + ' km' : r + ' m';
+  b.onclick = () => { radius = r; zeichneRadius(); laden(); };
+  b.dataset.r = r;
+  rBox.appendChild(b);
+});
+function zeichneRadius() {
+  [...rBox.children].forEach(b => b.setAttribute('aria-pressed', +b.dataset.r === radius));
+}
+zeichneRadius();
+
+// ------------------------------------------------------------- Standort ----
+function standortSuchen() {
+  if (!navigator.geolocation) return meldung('Kein GPS', 'Dieses Gerät liefert keinen Standort. Bitte von Hand setzen.');
+  sub.textContent = 'Standort wird bestimmt …';
+  navigator.geolocation.watchPosition(
+    p => {
+      // heading liefert das GPS nur brauchbar, wenn man sich auch bewegt --
+      // im Stand dreht sich der Wert wild. Ab ~5 km/h ist er verlässlich.
+      const kurs = (p.coords.heading != null && !isNaN(p.coords.heading) &&
+                    p.coords.speed > 1.5) ? p.coords.heading : kursManuell;
+      const neu = { lat: p.coords.latitude, lng: p.coords.longitude,
+                    genau: p.coords.accuracy, kurs };
+      // Erst neu laden, wenn man sich nennenswert bewegt hat -- sonst feuert
+      // watchPosition bei jedem GPS-Zucken eine Anfrage.
+      const weit = !pos || abstand(pos, neu) > 25;
+      pos = neu;
+      if (weit) laden();
+    },
+    err => {
+      const txt = err.code === 1 ? 'Standortfreigabe verweigert.' : 'Standort nicht ermittelbar.';
+      if (!pos) meldung('Kein Standort', txt + ' Unten „Standort setzen“ benutzen.');
+    },
+    { enableHighAccuracy: true, maximumAge: 10000, timeout: 20000 }
+  );
+}
+
+function abstand(a, b) {   // grobe Meter, reicht fuer die Bewegungsschwelle
+  const dy = (b.lat - a.lat) * 111320;
+  const dx = (b.lng - a.lng) * 111320 * Math.cos(a.lat * Math.PI / 180);
+  return Math.hypot(dx, dy);
+}
+
+// ----------------------------------------------------------------- Laden ---
+async function laden() {
+  if (!pos) return;
+  if (holen) holen.abort();
+  const meins = holen = new AbortController();
+  // Mit Fahrtrichtung sortiert der Server nach geschätzter Fahrstrecke statt
+  // nach Luftlinie -- bei Lücken am Straßenrand ist das der Unterschied
+  // zwischen "liegt auf dem Weg" und "wenden und zurück".
+  const kurs = pos.kurs != null ? `&heading=${pos.kurs}` : '';
+  const url = `${API}/spots/nearby?lat=${pos.lat}&lng=${pos.lng}&radius=${radius}&limit=25${kurs}`;
+
+  let data;
+  try {
+    const r = await fetch(url, { signal: meins.signal, cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    data = await r.json();
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+    sub.textContent = 'zuletzt: Fehler';
+    return meldung('Server nicht erreichbar', e.message + ' — es wird weiter versucht.');
+  } finally {
+    if (holen === meins) holen = null;
+  }
+
+  // Getrennt vom Netzabruf: ein Fehler beim Anzeigen ist kein Verbindungs-
+  // problem und darf auch nicht als solches gemeldet werden.
+  try {
+    zeichne(data);
+  } catch (e) {
+    sub.textContent = 'Anzeigefehler';
+    meldung('Anzeigefehler', e.message);
+  }
+  pruefeZiel();
+}
+
+function zeichne(data) {
+  const spots = letzteSpots = data.spots || [];
+  const genau = pos.genau ? ` · Standort ±${Math.round(pos.genau)} m` : '';
+  const richtung = data.query?.heading != null
+    ? ` · in Fahrtrichtung ${Math.round(data.query.heading)}°` : '';
+  sub.textContent = `${data.total_in_radius} frei im Umkreis · ${uhrzeit()}${genau}${richtung}`;
+
+  karte(spots);
+
+  if (!spots.length) {
+    return meldung('Nichts frei', `Im Umkreis von ${radius} m ist gerade kein Platz frei. Größeren Radius wählen.`);
+  }
+  main.innerHTML = '';
+  spots.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.className = 'spot' + (s.age_s > 300 ? ' old' : '');
+    // Die Nummer ist dieselbe wie auf der Karte -- sonst muss man raten,
+    // welcher Punkt zu welcher Zeile gehoert.
+    const nr = i < AUF_KARTE ? `<span class="rank">${i + 1}</span>` : '';
+    b.innerHTML = `
+      <span class="dist">${meter(s.distance_m)}</span>
+      <span class="meta">
+        <span class="name">${nr}${esc(s.name || s.sensor_id)}</span>
+        <span class="sub"><span class="dot"></span>${esc(s.lot || 'frei')} · ${alter(s.age_s)}</span>
+      </span>
+      <span class="go">›</span>`;
+    b.onclick = () => navigieren(s);
+    main.appendChild(b);
+  });
+}
+
+// ------------------------------------------------------------------ Karte ---
+// Reine Übersicht: wo liegen die nächsten Plätze zueinander und zu mir. Der Weg
+// zum Ziel bleibt die Liste bzw. die Navi-App.
+let map = null, pins = null, ichPunkt = null, ichKreis = null;
+let autoFit = true;          // bis der Nutzer die Karte selbst anfasst
+let programmatisch = false;  // eigene Kartenbewegung nicht als Nutzergeste werten
+
+function kartInit() {
+  map = L.map('map', { zoomControl: true, scrollWheelZoom: false, attributionControl: true });
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, attribution: '&copy; OpenStreetMap'
+  }).addTo(map);
+  map.setView([DEMO.lat, DEMO.lng], 17);
+  pins = L.layerGroup().addTo(map);
+  const angefasst = () => { if (!programmatisch) { autoFit = false; $('#recenter').hidden = false; } };
+  map.on('dragstart', angefasst);
+  map.on('zoomstart', angefasst);
+}
+
+function karte(spots) {
+  // Ohne Leaflet lieber gar keine Karte als eine kaputte App -- die Liste ist
+  // das Wesentliche und funktioniert weiter.
+  if (typeof L === 'undefined') { $('#mapwrap').hidden = true; return; }
+  if (!map) kartInit();
+  const punkte = [];
+
+  if (pos) {
+    const p = [pos.lat, pos.lng];
+    punkte.push(p);
+    if (ichPunkt) { ichPunkt.setLatLng(p); ichKreis.setLatLng(p); }
+    else {
+      ichKreis = L.circle(p, { radius: 0, color: '#1667d4', weight: 1, fillOpacity: .12 }).addTo(map);
+      ichPunkt = L.circleMarker(p, { radius: 7, color: '#fff', weight: 3,
+                                     fillColor: '#1667d4', fillOpacity: 1 }).addTo(map);
+    }
+    ichKreis.setRadius(pos.genau || 0);
+  }
+
+  pins.clearLayers();
+  spots.slice(0, AUF_KARTE).forEach((s, i) => {
+    punkte.push([s.lat, s.lng]);
+    L.marker([s.lat, s.lng], {
+      icon: L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13],
+                        html: `<div class="pin">${i + 1}</div>` }),
+      keyboard: false,
+    }).addTo(pins)
+      .bindTooltip(`${esc(s.name || s.sensor_id)} · ${meter(s.distance_m)}`,
+                   { direction: 'top', offset: [0, -14] })
+      .on('click', () => navigieren(s));
+  });
+
+  if (autoFit) einpassen(punkte);
+}
+
+function einpassen(punkte) {
+  if (!punkte.length) return;
+  programmatisch = true;
+  if (punkte.length === 1) map.setView(punkte[0], 17);
+  else map.fitBounds(L.latLngBounds(punkte).pad(0.25), { maxZoom: 19, animate: false });
+  setTimeout(() => { programmatisch = false; }, 0);
+}
+
+$('#recenter').onclick = () => {
+  autoFit = true;
+  $('#recenter').hidden = true;
+  laden();
+};
+
+// Der eigentliche Zweck: ein Ziel an die registrierte Navi-App uebergeben.
+function navigieren(s) {
+  merkeZiel(s);
+  location.href = IOS ? s.nav.apple : s.nav.google;
+}
+
+// ------------------------------------------------------------ Ziel-Wächter --
+// Während die Navi-App läuft, ist diese Seite eingefroren -- der Browser lässt
+// keine Hintergrundabfrage zu. Sobald man aber zurückwechselt, prüft die App
+// sofort nach, ob der angesteuerte Platz überhaupt noch frei ist, und bietet
+// sonst mit einem Tipp den nächstbesten an. Das Ziel überlebt in localStorage,
+// auch wenn der Browser die Seite zwischendurch wegräumt.
+const ZIEL_KEY = 'parkziel';
+const ZIEL_MAX_MS = 45 * 60 * 1000;      // danach ist die Fahrt vermutlich vorbei
+let ziel = null;
+try { ziel = JSON.parse(localStorage.getItem(ZIEL_KEY) || 'null'); } catch (e) { }
+
+function merkeZiel(s) {
+  ziel = { id: s.sensor_id, name: s.name || s.sensor_id, lot: s.lot,
+           nav: s.nav, seit: Date.now() };
+  try { localStorage.setItem(ZIEL_KEY, JSON.stringify(ziel)); } catch (e) { }
+  zeigeZiel({ status: s.status, age_s: s.age_s, stale: s.stale });
+}
+
+function vergissZiel() {
+  ziel = null;
+  try { localStorage.removeItem(ZIEL_KEY); } catch (e) { }
+  $('#ziel').hidden = true;
+}
+
+async function pruefeZiel() {
+  if (!ziel) return;
+  if (Date.now() - ziel.seit > ZIEL_MAX_MS) return vergissZiel();
+  try {
+    const r = await fetch(`${API}/spots/${encodeURIComponent(ziel.id)}/status`,
+                          { cache: 'no-store' });
+    if (r.status === 404) return vergissZiel();       // Platz wurde gelöscht
+    if (!r.ok) return;
+    zeigeZiel(await r.json());
+  } catch (e) {
+    // Offline: lieber den letzten bekannten Stand stehen lassen als nichts.
+  }
+}
+
+function zeigeZiel(st) {
+  if (!ziel) return;
+  const frei = st.status === 'free' && !st.stale;
+  const ersatz = letzteSpots.find(s => s.sensor_id !== ziel.id);
+  const box = $('#ziel');
+  box.hidden = false;
+  box.className = frei ? 'ok' : 'weg';
+  box.innerHTML =
+    `<span class="ztext">
+       <b>${frei ? 'Ihr Platz ist noch frei' : 'Ihr Platz ist belegt'}</b>
+       <span>${esc(ziel.name)}${st.age_s != null ? ' · ' + alter(st.age_s) : ' · ohne Meldung'}</span>
+     </span>` +
+    (frei ? `<button class="zbtn" data-tu="route">Route</button>`
+          : ersatz ? `<button class="zbtn" data-tu="ersatz">Nächster · ${meter(ersatz.distance_m)}</button>` : '') +
+    `<button class="zbtn x" data-tu="weg" title="nicht mehr verfolgen">×</button>`;
+
+  box.onclick = e => {
+    const tu = e.target.dataset && e.target.dataset.tu;
+    if (tu === 'weg') vergissZiel();
+    else if (tu === 'route') location.href = IOS ? ziel.nav.apple : ziel.nav.google;
+    else if (tu === 'ersatz' && ersatz) navigieren(ersatz);
+  };
+}
+
+function meldung(titel, text) { main.innerHTML = `<div id="msg"><b>${esc(titel)}</b>${esc(text)}</div>`; }
+function meter(m) { return m >= 1000 ? (m / 1000).toFixed(1) + ' km' : Math.round(m) + ' m'; }
+function alter(s) {
+  if (s == null) return 'ohne Meldung';
+  if (s < 60) return 'vor ' + Math.round(s) + ' s';
+  if (s < 3600) return 'vor ' + Math.round(s / 60) + ' min';
+  return 'vor ' + Math.round(s / 3600) + ' h';
+}
+function uhrzeit() { return new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' }); }
+function esc(t) { return String(t).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c])); }
+
+// ------------------------------------------------------- Standort von Hand -
+const dlg = $('#dlg');
+$('#manual').onclick = () => {
+  $('#coords').value = pos ? `${pos.lat.toFixed(5)}, ${pos.lng.toFixed(5)}` : '';
+  $('#kurs').value = kursManuell != null ? kursManuell : '';
+  dlg.showModal();
+};
+function kursAusDialog() {
+  const t = $('#kurs').value.trim().replace(',', '.');
+  kursManuell = t === '' || isNaN(parseFloat(t)) ? null : parseFloat(t);
+  return kursManuell;
+}
+$('#demo').onclick = () => { pos = { ...DEMO, kurs: kursAusDialog() }; dlg.close(); laden(); };
+$('#ok').onclick = () => {
+  const m = $('#coords').value.match(/(-?\d+[.,]?\d*)\s*[,; ]\s*(-?\d+[.,]?\d*)/);
+  if (!m) return $('#coords').focus();
+  pos = { lat: parseFloat(m[1].replace(',', '.')), lng: parseFloat(m[2].replace(',', '.')),
+          kurs: kursAusDialog() };
+  dlg.close(); laden();
+};
+$('#reload').onclick = laden;
+
+// Alle 15 s nachladen, aber nur solange die App sichtbar ist -- im Hintergrund
+// zu pollen kostet nur Akku und Serverlast.
+setInterval(() => { if (document.visibilityState === 'visible') laden(); }, 15000);
+// Zurück aus der Navi-App: sofort prüfen, ob der angesteuerte Platz noch frei
+// ist -- das ist der Moment, in dem die Antwort zählt.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState !== 'visible') return;
+  pruefeZiel();
+  laden();
+});
+
+karte([]);            // Karte gleich aufbauen, auch bevor der Standort da ist
+pruefeZiel();         // ein Ziel aus der letzten Sitzung sofort wieder anzeigen
+standortSuchen();
+</script>
+</body>
+</html>
