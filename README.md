@@ -13,6 +13,7 @@ Navi.
 ```
 Magnetsensor je Lücke  --LoRa-->  Gateway  --HTTPS-->  Server  <--HTTPS--  App
  ESP32-C3 + GY-271                bündelt            Flask + SQLite       PWA
+   hardware/carsensor             gateway/              server/         server/app
 ```
 
 Warum LoRa: ein Sensor am Bordstein hat keinen Strom und kein WLAN. LoRa
@@ -26,7 +27,8 @@ Schulprojekt für Jugend forscht.
 | Pfad | Inhalt |
 |---|---|
 | [`server/`](server/README.md) | **Hauptteil.** API-Server, Fahrer-App und Verwaltungsseite. Flask + SQLite, läuft auf PythonAnywhere. |
-| [`hardware/carsensor/`](hardware/carsensor/carsensor.ino) | Der Stellplatzsensor: ESP32-C3 + GY-271-Magnetometer, mit Kalibrierung und Feldversuch über ein Captive Portal. |
+| [`gateway/`](gateway/README.md) | Der Weg vom Funk ins Netz: LoRa-Empfänger am USB-Anschluss und die Software, die seine Meldungen an den Server weitergibt. |
+| [`hardware/carsensor/`](hardware/carsensor/carsensor.ino) | Der Stellplatzsensor: ESP32-C3 + GY-271-Magnetometer, mit Kalibrierung und Feldversuch über ein Captive Portal. Sendet per LoRa. |
 | [`hardware/espnow_cam/`](hardware/espnow_cam/README.md) | Bildstrecke ESP32-CAM → ESP-NOW → Browser. Entstanden als Werkzeug, um überhaupt ein Bild vom Parkplatz zu bekommen. |
 | [`kamera/`](kamera/README.md) | Vorversuch: freie Plätze aus **einem** Luftbild zählen (Raster fitten + YOLO). Zeigt die Alternative ohne Sensor je Bucht. |
 | [`PROJEKT_PROMPT.md`](PROJEKT_PROMPT.md) | Ziel, Architektur, API-Vertrag, Randbedingungen, offene Fragen. |
@@ -45,14 +47,15 @@ ein Demo-Parkplatz).
 | Fahrer-App (Karte, Umkreissuche, Ziel-Wächter) | fertig |
 | Verwaltungsseite | fertig |
 | Magnetsensor: Erkennung belegt/frei | funktioniert am Tisch |
-| **LoRa-Funkstrecke Sensor → Gateway** | **noch offen** — der Sensor meldet bisher nur an sein eigenes Captive Portal |
-| Gateway | bisher nur simuliert (`server/simulate_gateway.py`) |
+| Gateway-Software auf dem Rechner | fertig, 23 Tests, gegen den Server durchgespielt |
+| LoRa-Sender und -Empfänger (Sketches) | geschrieben, **noch nie übersetzt und nie gefunkt** — es fehlt die Hardware |
 | Kamera-Vorversuch | abgeschlossen, 490 Plätze in ~1,5 s |
 
-Der Weg vom Sensor zum Server ist damit die nächste offene Strecke: heute
-füttert der Simulator den Server, morgen soll es das echte LoRa-Gateway sein.
-Der Server merkt den Unterschied nicht — für ihn ist beides derselbe
-`POST /api/v1/events`.
+Die Rechnerseite des Wegs vom Sensor zum Server steht also und lässt sich mit
+einem Mitschnitt vorführen (`gateway.py --replay`). Was fehlt, sind zwei
+Funkmodule für 5 € und der erste Versuch damit. Bis dahin füttert weiterhin
+`server/simulate_gateway.py` den Server — der merkt den Unterschied nicht, für
+ihn ist beides derselbe `POST /api/v1/events`.
 
 ## Schnellstart
 

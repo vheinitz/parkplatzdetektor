@@ -1,0 +1,3 @@
+# Nur fuer den echten seriellen Port noetig. Mit --replay laeuft das Gateway
+# und laufen die Tests ohne jede Abhaengigkeit.
+pyserial>=3.5

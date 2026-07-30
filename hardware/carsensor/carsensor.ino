@@ -40,7 +40,14 @@
  *
  * Serielle Konsole: n = reset, 1/2 = leer Start/Stop, 3/4 = Auto Start/Stop,
  *                   r = Referenz, m = Messung, l = Liste, x = Liste loeschen,
- *                   i = Info, t = Selbsttest
+ *                   i = Info, t = Selbsttest, f = LoRa-Meldung erzwingen
+ *
+ * MELDUNG AN DAS GATEWAY (optional, USE_LORA):
+ *   Mit angeloetetem SX1276/RFM95 meldet der Sensor jeden Wechsel
+ *   belegt/frei per LoRa an das Gateway, dazu alle 15 min ein Lebenszeichen.
+ *   Verdrahtung und Protokoll stehen in ../../gateway/README.md. Ohne
+ *   Funkmodul einfach USE_LORA auf 0 setzen -- dann bleibt es beim
+ *   Captive Portal wie bisher.
  */
 
 #include <Wire.h>
@@ -69,6 +76,40 @@ HWCDC UsbSerial;
 // Statt Accesspoint ins vorhandene WLAN: beide Zeilen einkommentieren.
 // #define STA_SSID "MeinWLAN"
 // #define STA_PASS "geheim"
+
+// --- LoRa: Meldung an das Gateway ---------------------------------------
+// Auf 0 setzen, wenn kein Funkmodul angeloetet ist -- der Sensor laeuft dann
+// wie bisher, nur ohne zu melden. Alles Weitere: ../../gateway/README.md
+#define USE_LORA 1
+
+#define LORA_KNOTEN  ""              // leer = Kennung aus der MAC ("PS-A1B2C3")
+#define LORA_HEARTBEAT_S    900      // Lebenszeichen alle 15 min
+#define LORA_WIEDERHOLUNGEN 3        // je Ereignis, es gibt keine Bestaetigung
+#define LORA_WIEDERHOL_MS   1500     // Grundabstand der Wiederholungen
+
+// SX1276/RFM95. GPIO 2, 8 und 9 bleiben frei -- Strapping-Pins, ein falscher
+// Pegel beim Einschalten verhindert den Start. GPIO 4 und 5 hat das
+// Magnetometer.
+#define LORA_SCK   6
+#define LORA_MISO  1
+#define LORA_MOSI  7
+#define LORA_NSS  10
+#define LORA_RST   3
+#define PIN_VBAT  -1                 // GPIO des Spannungsteilers, -1 = keiner
+
+#define LORA_FREQ     868E6          // Europa
+#define LORA_SF       7
+#define LORA_BW       125E3
+#define LORA_CR       5
+#define LORA_SYNCWORD 0x2A           // muss zum Gateway passen
+#define LORA_TX_DBM   17             // 2..20; mehr kostet Strom und Funkzeit
+
+// Erst hier, nicht oben bei den uebrigen Includes: davor ist USE_LORA noch
+// nicht definiert, und die Bedingung waere immer falsch.
+#if USE_LORA
+#include <SPI.h>
+#include <LoRa.h>                    // arduino-cli lib install LoRa
+#endif
 
 #define SAMPLE_MS       50           // Messintervall
 #define ALPHA_LANGSAM   0.02f        // ruhiges Mittel von |B| fuer die Anzeige (~2,5 s)
@@ -553,6 +594,141 @@ void messen() {
 // nichts mehr bewegt und eine Messung ist verwertbar.
 float unruhe() { return fabsf(bSchnell - bLangsam); }
 
+// ---------------------------------------------------------------- LoRa-Sender
+#if USE_LORA
+
+// Gesendet wird **nur bei Zustandswechsel**, dazu ein Lebenszeichen. Ein
+// Sensor, der im Takt sendet, verbraucht Strom und Funkzeit fuer eine
+// Nachricht, die der Server schon kennt: eine Parkluecke aendert sich ein
+// paar Mal am Tag, nicht ein paar Mal pro Minute.
+//
+// Es gibt keine Bestaetigung vom Gateway. Der Sensor koennte danach horchen,
+// aber das kostet Wachzeit und eine zweite Funkrichtung; stattdessen geht
+// jedes Ereignis LORA_WIEDERHOLUNGEN mal raus. Alle Wiederholungen tragen
+// dieselbe laufende Nummer, und das Gateway wirft Doppelte weg. Das ist die
+// uebliche Bauform fuer batteriebetriebene Einwegknoten.
+//
+// Funkzeit (Sendedauer): bei SF7/BW125 braucht ein Paket dieser Laenge rund
+// 60 ms. In Europa duerfen auf 868 MHz 1 % der Zeit gesendet werden, also
+// etwa 36 s je Stunde. Drei Wiederholungen sind 0,18 s -- selbst 100
+// Ereignisse pro Stunde blieben weit darunter.
+
+static uint16_t loraSeq = 0;
+static char     loraZuletzt = 0;          // zuletzt gemeldeter Zustand
+static uint8_t  loraOffen = 0;            // ausstehende Wiederholungen
+static uint32_t loraNaechste = 0;
+static uint32_t loraLetzteMeldung = 0;
+static char     loraNutzlast[56];
+static char     loraKnoten[16] = "";
+static bool     loraOk = false;
+
+uint16_t crc16(const char *daten, size_t laenge) {
+  uint16_t crc = 0xFFFF;
+  for (size_t i = 0; i < laenge; i++) {
+    crc ^= (uint16_t)(uint8_t)daten[i] << 8;
+    for (uint8_t b = 0; b < 8; b++)
+      crc = (crc & 0x8000) ? (uint16_t)((crc << 1) ^ 0x1021) : (uint16_t)(crc << 1);
+  }
+  return crc;
+}
+
+// Jeder Sensor braucht eine eigene Kennung. Sie aus der MAC-Adresse
+// abzuleiten spart, 50 Geraete einzeln mit verschiedenen Quelltexten zu
+// flashen -- jedes bekommt beim ersten Start automatisch seine eigene.
+void loraKennung() {
+  if (strlen(LORA_KNOTEN)) {
+    strncpy(loraKnoten, LORA_KNOTEN, sizeof(loraKnoten) - 1);
+    return;
+  }
+  String mac = WiFi.macAddress();      // "AA:BB:CC:DD:EE:FF"
+  mac.replace(":", "");
+  snprintf(loraKnoten, sizeof(loraKnoten), "PS-%s", mac.substring(6).c_str());
+}
+
+int16_t batterieMV() {
+#if PIN_VBAT >= 0
+  // Spannungsteiler halbiert, damit die Zelle in den Messbereich passt.
+  return (int16_t)(analogReadMilliVolts(PIN_VBAT) * 2);
+#else
+  return -1;                            // kein Teiler bestueckt
+#endif
+}
+
+char statusZeichen() {
+  const char *e = ergebnisText();
+  if (!strcmp(e, "Auto")) return 'B';
+  if (!strcmp(e, "leer")) return 'F';
+  return '?';                           // nicht kalibriert oder Sensorfehler
+}
+
+// Ereignis einreihen. Die laufende Nummer steigt je Ereignis, nicht je
+// Wiederholung -- daran erkennt das Gateway die Doppelten.
+void loraEreignis(char status) {
+  loraSeq++;
+  char rumpf[48];
+  snprintf(rumpf, sizeof(rumpf), "PS1,%s,%c,%d,%u",
+           loraKnoten, status, batterieMV(), loraSeq);
+  snprintf(loraNutzlast, sizeof(loraNutzlast), "%s,%04X",
+           rumpf, crc16(rumpf, strlen(rumpf)));
+  loraOffen = LORA_WIEDERHOLUNGEN;
+  loraNaechste = millis();
+  loraLetzteMeldung = millis();
+}
+
+void loraSetup() {
+  loraKennung();
+  SPI.begin(LORA_SCK, LORA_MISO, LORA_MOSI, LORA_NSS);
+  LoRa.setPins(LORA_NSS, LORA_RST, -1);      // ohne DIO0: es wird nur gesendet
+  if (!LoRa.begin(LORA_FREQ)) {
+    Serial.println(F("LoRa: Funkmodul antwortet nicht -- Verdrahtung und 3,3 V pruefen."));
+    return;
+  }
+  LoRa.setSpreadingFactor(LORA_SF);
+  LoRa.setSignalBandwidth(LORA_BW);
+  LoRa.setCodingRate4(LORA_CR);
+  LoRa.setSyncWord(LORA_SYNCWORD);
+  LoRa.setTxPower(LORA_TX_DBM);
+  LoRa.enableCrc();
+  loraOk = true;
+  Serial.printf("LoRa: Knoten %s, %.1f MHz, SF%d, %d dBm\n",
+                loraKnoten, LORA_FREQ / 1e6, LORA_SF, LORA_TX_DBM);
+}
+
+void loraPflegen() {
+  if (!loraOk) return;
+  uint32_t jetzt = millis();
+
+  // 1) Zustandswechsel -- der eigentliche Anlass zu senden
+  char status = statusZeichen();
+  if (status != loraZuletzt) {
+    loraZuletzt = status;
+    loraEreignis(status);
+    Serial.printf("LoRa: Wechsel -> %c, sende %u mal\n", status, LORA_WIEDERHOLUNGEN);
+  }
+
+  // 2) Lebenszeichen: ohne das koennte der Server einen stummen Sensor nicht
+  //    von einem dauerhaft belegten Platz unterscheiden.
+  if (jetzt - loraLetzteMeldung >= (uint32_t)LORA_HEARTBEAT_S * 1000UL) {
+    loraEreignis(loraZuletzt ? loraZuletzt : statusZeichen());
+    loraOffen = 1;                      // Lebenszeichen einmal genuegt
+  }
+
+  // 3) Ausstehende Sendungen abarbeiten
+  if (loraOffen && (int32_t)(jetzt - loraNaechste) >= 0) {
+    LoRa.beginPacket();
+    LoRa.print(loraNutzlast);
+    LoRa.endPacket();                   // blockiert ~60 ms
+    LoRa.sleep();                       // Funkmodul danach schlafen legen
+    loraOffen--;
+    // Zufaellige Pause: senden mehrere Sensoren gleichzeitig los (ein Auto
+    // faehrt an mehreren Luecken vorbei), wuerden gleiche Abstaende dafuer
+    // sorgen, dass sich auch die Wiederholungen wieder ueberlagern.
+    loraNaechste = millis() + LORA_WIEDERHOL_MS + random(0, 500);
+  }
+}
+
+#endif  // USE_LORA
+
 // ---------------------------------------------------------------- Webseiten
 
 const char SEITE[] PROGMEM = R"HTML(<!doctype html>
@@ -843,6 +1019,14 @@ void konsole() {
       case 'm': mittelungStarten(ZWECK_MESS, "konsole", MESS_PROBEN); break;
       case 'x': serie.n = 0; serieSpeichern(); Serial.println(F("[clear] Messreihe geloescht.")); break;
       case 't': selbsttest();    break;
+#if USE_LORA
+      // Fuer den Reichweitenversuch: Meldung ausloesen, ohne auf ein Auto
+      // zu warten. Am Gateway laesst sich dann RSSI und SNR ablesen.
+      case 'f':
+        loraEreignis(statusZeichen());
+        Serial.printf("[lora] Meldung %u erzwungen: %s\n", loraSeq, loraNutzlast);
+        break;
+#endif
       case 'l':
         Serial.printf("Messreihe (%u):\n", serie.n);
         for (uint16_t k = 0; k < serie.n; k++)
@@ -855,6 +1039,11 @@ void konsole() {
                       kal.bLeer, kal.sLeer, kal.bAuto, kal.sAuto, kalAbstand(), schwelleB());
         Serial.printf("  |B| aktuell %.1f | Messungen %u | Referenz %s %.1f\n",
                       bLangsam, serie.n, refGesetzt ? "gesetzt" : "fehlt", bRef);
+#if USE_LORA
+        Serial.printf("  LoRa: %s | Knoten %s | gemeldet '%c' | Nummer %u | offen %u\n",
+                      loraOk ? "bereit" : "kein Modul", loraKnoten,
+                      loraZuletzt ? loraZuletzt : '-', loraSeq, loraOffen);
+#endif
         break;
       default: break;
     }
@@ -890,6 +1079,9 @@ void setup() {
   Serial.printf("Messreihe: %u gespeicherte Messungen\n", serie.n);
 
   webStart();
+#if USE_LORA
+  loraSetup();
+#endif
   Serial.println(F("Konsole: n = reset, 1/2 = leer Start/Stop, 3/4 = Auto Start/Stop"));
   Serial.println(F("         r = Referenz, m = Messung, l = Liste, x = Liste loeschen"));
   Serial.println(F("         i = Info, t = Selbsttest"));
@@ -907,6 +1099,10 @@ void loop() {
     tSample = jetzt;
     messen();
   }
+
+#if USE_LORA
+  loraPflegen();
+#endif
 
   if (jetzt - tPrint >= 1000) {
     tPrint = jetzt;
