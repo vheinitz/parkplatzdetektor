@@ -1,0 +1,19 @@
+{
+  "name": "Parkassistent",
+  "short_name": "Parken",
+  "description": "Freie Parkplätze in der Nähe, Navigation über die Standard-Karten-App",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10151c",
+  "theme_color": "#10151c",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

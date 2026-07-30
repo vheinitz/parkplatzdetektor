@@ -1,0 +1,3 @@
+# Mehr braucht der Prototyp nicht: Datenbank ist SQLite (in Python enthalten),
+# Seed und Simulator laufen mit der Standardbibliothek.
+Flask>=2.2

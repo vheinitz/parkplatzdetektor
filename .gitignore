@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Datenbank des Servers -- Laufzeitzustand, nie versionieren
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+
+# Lokale Werkzeug-Einstellungen
+.claude/settings.local.json
+
+# --- Erzeugte Bilddaten und Videos -------------------------------------
+# Alles hier entsteht aus video.webm bzw. aus dem Detektor und laesst sich
+# jederzeit neu erzeugen. Zusammen ueber 200 MB -- ein Git-Repo waere damit
+# fuer immer aufgeblaeht, auch wenn die Dateien spaeter geloescht wuerden.
+frames/
+overlay/
+slots/
+*.mp4
+*.webm
+*.png
+*.jpg
+
+# YOLO-Gewichte: ladbar von ultralytics, nicht Teil des Projekts
+models/
+*.pt
