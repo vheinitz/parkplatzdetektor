@@ -30,8 +30,8 @@ Navigation, Nutzerkonten.
 
 | Komponente | Aufgabe | Stufe 1 (Prototyp) |
 |---|---|---|
-| Sensor | belegt/frei je Bucht | simuliert per Skript; später ESP32 + Ultraschall/Magnetometer, oder Kamera (siehe §7) |
-| Gateway | bündelt Sensoren, ein Uplink | simuliert; später ESP-NOW-Bridge / LoRaWAN |
+| Sensor | belegt/frei je Bucht | **entschieden: ESP32-C3 + Magnetometer** — `hardware/carsensor/`, Erkennung funktioniert; Kamera als Alternative für Freiflächen (§7) |
+| Gateway | bündelt Sensoren, ein Uplink | **vorgesehen: LoRa**; heute per Skript simuliert (`server/simulate_gateway.py`) |
 | **API-Server** | Stammdaten, Status, Umkreissuche | **`server/` in diesem Repo — Flask + SQLite, deployt auf PythonAnywhere** |
 | App | Karte, Liste, Navi-Übergabe | Flutter/React Native, später |
 
@@ -140,9 +140,9 @@ Sensors — Retry des Gateways ist damit gefahrlos.
 5. **Erst dann** über Skalierung reden: MQTT-Push, Postgres/PostGIS,
    Batterielaufzeit, Gehäuse, dynamische Preise.
 
-## 7. Verbindung zum Kamera-Detektor in diesem Repo
+## 7. Verbindung zum Kamera-Vorversuch in diesem Repo
 
-Der bereits vorhandene Teil (`detect.py`, `fit_grid.py`, `occupancy.py`) löst
+Der Vorversuch in `kamera/` (`detect.py`, `fit_grid.py`, `occupancy.py`) löst
 dieselbe Aufgabe **ohne Sensor je Bucht**: ein Drohnen-/Mastbild → Raster
 fitten → YOLO(DOTA) → belegt/frei je Stellplatz (490 Plätze, ~1,5 s).
 

@@ -270,6 +270,8 @@ schaltet auch das Ereignis-Log ab.
   Für den Prototyp ist Polling einfacher zu deployen und zu debuggen.
 - **Rate-Limiting** der offenen `/nearby`-Route.
 - **Reservierung, Bezahlung, Nutzerkonten** — nicht Teil von Stufe 1.
-- **Anbindung des Kamera-Detektors** aus diesem Repo als virtuelles Gateway.
+- **LoRa-Gateway** statt des Simulators — der eigentliche Weg vom Sensor
+  (`../hardware/carsensor/`) hierher. Am Server ändert sich dabei nichts.
+- **Anbindung des Kamera-Vorversuchs** (`../kamera/`) als virtuelles Gateway.
   Dafür fehlt die Georeferenzierung der Rasterzellen (siehe
   `../PROJEKT_PROMPT.md`, §7).
