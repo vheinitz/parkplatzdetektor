@@ -31,7 +31,7 @@ Navigation, Nutzerkonten.
 | Komponente | Aufgabe | Stufe 1 (Prototyp) |
 |---|---|---|
 | Sensor | belegt/frei je Bucht | **entschieden: ESP32-C3 + Magnetometer** — `hardware/carsensor/`, Erkennung funktioniert; Kamera als Alternative für Freiflächen (§7) |
-| Gateway | bündelt Sensoren, ein Uplink | **vorgesehen: LoRa**; heute per Skript simuliert (`server/simulate_gateway.py`) |
+| Gateway | bündelt Sensoren, ein Uplink | **entschieden: LoRa** — `gateway/`, Empfänger am USB-Anschluss plus `gateway.py`; Funkstrecke noch ungetestet |
 | **API-Server** | Stammdaten, Status, Umkreissuche | **`server/` in diesem Repo — Flask + SQLite, deployt auf PythonAnywhere** |
 | App | Karte, Liste, Navi-Übergabe | Flutter/React Native, später |
 

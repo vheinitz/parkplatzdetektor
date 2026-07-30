@@ -270,8 +270,9 @@ schaltet auch das Ereignis-Log ab.
   Für den Prototyp ist Polling einfacher zu deployen und zu debuggen.
 - **Rate-Limiting** der offenen `/nearby`-Route.
 - **Reservierung, Bezahlung, Nutzerkonten** — nicht Teil von Stufe 1.
-- **LoRa-Gateway** statt des Simulators — der eigentliche Weg vom Sensor
-  (`../hardware/carsensor/`) hierher. Am Server ändert sich dabei nichts.
+- **LoRa-Funkstrecke** in Betrieb nehmen. Die Gegenstelle steht bereits in
+  `../gateway/` und spricht dieselbe `/events`-Schnittstelle wie der Simulator;
+  am Server ändert sich dafür nichts.
 - **Anbindung des Kamera-Vorversuchs** (`../kamera/`) als virtuelles Gateway.
   Dafür fehlt die Georeferenzierung der Rasterzellen (siehe
   `../PROJEKT_PROMPT.md`, §7).
