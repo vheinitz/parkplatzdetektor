@@ -1,0 +1,617 @@
+<title>Parkassistent Lernpfad</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#F4F6F3; --paper:#FFFFFF; --ink:#1A2024; --ink-2:#4B5459; --ink-3:#7A8388;
+  --line:#D7DDDA; --line-soft:#E7ECE9;
+  --accent:#1B6B8A; --accent-soft:#E2EEF3; --accent-ink:#0F4A62;
+  --pick:#2E7D4F; --pick-bg:#E3F1E8;
+  --drop:#9AA3A8; --drop-bg:#EEF1F1;
+  --swan:#8C6A1F; --swan-bg:#F5EEDC;
+  --warn:#B4552B;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#141819; --paper:#1C2123; --ink:#E6EAE8; --ink-2:#B3BCC0; --ink-3:#7F898E;
+    --line:#333B3F; --line-soft:#272E31;
+    --accent:#6CB6D4; --accent-soft:#1A2F38; --accent-ink:#9FD0E4;
+    --pick:#6FC08F; --pick-bg:#16301F;
+    --drop:#6B757A; --drop-bg:#22282B;
+    --swan:#D6A94A; --swan-bg:#33290F;
+    --warn:#E5865C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#141819; --paper:#1C2123; --ink:#E6EAE8; --ink-2:#B3BCC0; --ink-3:#7F898E;
+  --line:#333B3F; --line-soft:#272E31;
+  --accent:#6CB6D4; --accent-soft:#1A2F38; --accent-ink:#9FD0E4;
+  --pick:#6FC08F; --pick-bg:#16301F;
+  --drop:#6B757A; --drop-bg:#22282B;
+  --swan:#D6A94A; --swan-bg:#33290F;
+  --warn:#E5865C;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:16px;line-height:1.55;padding-inline:clamp(16px,4vw,40px);padding-block:32px 80px}
+.wrap{max-width:80ch;margin:0 auto}
+h1,h2,h3,h4{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;font-weight:600;line-height:1.15;text-wrap:balance;margin:0}
+h1{font-size:clamp(30px,5vw,42px);letter-spacing:-.01em}
+h2{font-size:26px;margin-top:64px;padding-top:18px;border-top:2px solid var(--ink);display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:baseline}
+h2 .k{font-family:"IBM Plex Mono",monospace;font-size:15px;font-weight:500;color:var(--accent);letter-spacing:.06em}
+h3{font-size:19px;margin-top:30px}
+h4{font-size:16px;margin-top:18px;color:var(--ink-2)}
+p{margin:12px 0;max-width:70ch}
+ul{padding-left:20px;max-width:70ch}li{margin:5px 0}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-3)}
+header{display:grid;gap:10px}
+.lead{font-size:18px;color:var(--ink-2);max-width:64ch}
+.meta{display:flex;flex-wrap:wrap;gap:6px 24px;font-size:14px;color:var(--ink-2)}
+.meta b{color:var(--ink);font-weight:500}
+a{color:var(--accent)}
+.toc{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 18px;margin:24px 0 8px;font-size:14.5px;padding:0;list-style:none;max-width:none}
+.toc a{text-decoration:none;display:flex;gap:10px;padding:5px 0;border-bottom:1px solid var(--line-soft);color:var(--ink)}
+.toc a .k{font-family:"IBM Plex Mono",monospace;color:var(--accent);font-size:13px;min-width:2.4ch}
+.toc a:hover,.toc a:focus-visible{color:var(--accent);outline:none}
+.frage{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:20px;font-weight:500;border-left:3px solid var(--accent);padding:6px 16px;margin:18px 0;color:var(--ink)}
+.tw{overflow-x:auto;border:1px solid var(--line);margin:16px 0;background:var(--paper)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line-soft)}
+th{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:600;font-size:13px;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-2);background:var(--bg);border-bottom:1px solid var(--line);white-space:nowrap}
+tr:last-child td{border-bottom:none}
+td.t{font-weight:500;min-width:12ch}
+td.d{min-width:26ch}
+td.n{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}
+tr.pick td{background:var(--pick-bg)}
+tr.pick td.t::before{content:"✓ ";color:var(--pick)}
+tr.sum td{background:var(--bg);font-weight:500;border-top:1px solid var(--line)}
+.pill{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.04em;padding:1px 7px;border-radius:3px;white-space:nowrap}
+.pill.pick{color:var(--pick);background:var(--pick-bg)}
+.pill.swan{color:var(--swan);background:var(--swan-bg)}
+code{font-family:"IBM Plex Mono",monospace;font-size:.92em;background:var(--accent-soft);padding:1px 5px;border-radius:3px}
+.fazit{background:var(--pick-bg);border-left:4px solid var(--pick);padding:14px 18px;margin:22px 0}
+.fazit b:first-child{color:var(--pick)}
+.swanbox{background:var(--swan-bg);border-left:4px solid var(--swan);padding:14px 18px;margin:22px 0}
+.swanbox b:first-child{color:var(--swan)}
+.lernen{background:var(--paper);border:1px solid var(--line);padding:14px 18px;margin:24px 0}
+.lernen h4{margin-top:0;color:var(--ink);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.lernen h4 .h{font-family:"IBM Plex Mono",monospace;font-weight:500;color:var(--accent)}
+.lernen ul{margin:8px 0 0}
+.two{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin:16px 0}
+.box{background:var(--paper);border:1px solid var(--line);padding:14px 18px}
+.box h4{margin-top:0;color:var(--ink)}
+.box ul{margin:8px 0 0}
+figure{margin:20px 0;background:var(--paper);border:1px solid var(--line);padding:14px}
+figure svg{width:100%;height:auto;display:block;max-width:100%}
+figcaption{font-size:13px;color:var(--ink-2);margin-top:8px}
+.prompt{font-family:"IBM Plex Mono",monospace;font-size:13px;background:var(--paper);border:1px solid var(--line);padding:12px 16px;white-space:pre-wrap;line-height:1.5;margin:14px 0;color:var(--ink)}
+.calc{background:var(--paper);border:1px solid var(--line);padding:16px 18px;margin:20px 0}
+.calc .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px 22px}
+.calc label{display:grid;grid-template-columns:1fr auto;gap:4px 10px;font-size:14px;align-items:center;padding:4px 0;border-bottom:1px solid var(--line-soft)}
+.calc label input{width:9ch;font-family:"IBM Plex Mono",monospace;font-size:14px;padding:3px 6px;border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:3px;text-align:right}
+.calc label input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.calc .presets{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.calc button{font:inherit;font-size:14px;padding:6px 12px;border:1px solid var(--accent);background:var(--paper);color:var(--accent);border-radius:3px;cursor:pointer}
+.calc button:hover,.calc button:focus-visible{background:var(--accent-soft);outline:none}
+.calc button[aria-pressed="true"]{background:var(--accent);color:var(--paper)}
+.out{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.out div{background:var(--bg);border:1px solid var(--line);padding:10px 12px}
+.out .v{font-family:"IBM Plex Mono",monospace;font-size:24px;font-weight:500;line-height:1.1;font-variant-numeric:tabular-nums}
+.out .l{font-size:13px;color:var(--ink-2);margin-top:4px}
+.out .sub{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3);margin-top:2px}
+footer{margin-top:60px;font-size:13px;color:var(--ink-3);border-top:1px solid var(--line);padding-top:14px}
+@media (max-width:480px){h2{grid-template-columns:1fr;gap:2px}}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Lernpfad entlang der Entscheidungen · Jugend forscht, Technik</div>
+  <h1>Parkassistent: der Weg von der Idee zum Sensorknoten</h1>
+  <p class="lead">Von „freie Parkplätze finden“ bis zum funkenden Magnetsensor am Bordstein, in acht Entscheidungen. Jede Entscheidung nennt alle Wege, die es gibt, wählt einen mit Begründung und sagt, was man dafür lernen muss.</p>
+  <div class="meta">
+    <span>Stand <b>14. September 2026</b></span>
+    <span>Voraussetzung <b>Schulwissen Klasse 10</b></span>
+    <span>Software schreibt ein <b>KI-Agent</b>, wir stellen die Aufgabe und prüfen</span>
+  </div>
+</header>
+
+<ul class="toc">
+  <li><a href="#k1"><span class="k">1</span>Wie erkennt man eine freie Lücke?</a></li>
+  <li><a href="#k2"><span class="k">2</span>Welcher Sensor je Lücke?</a></li>
+  <li><a href="#k3"><span class="k">3</span>Wie kommt die Meldung heraus?</a></li>
+  <li><a href="#k4"><span class="k">4</span>Wie ist ein Sensorknoten aufgebaut?</a></li>
+  <li><a href="#k5"><span class="k">5</span>Mikrocontroller hands-on</a></li>
+  <li><a href="#k6"><span class="k">6</span>Vom Funk zum Server</a></li>
+  <li><a href="#k7"><span class="k">7</span>Fahrer und Betreiber</a></li>
+  <li><a href="#k8"><span class="k">8</span>Wie man Software entwickelt</a></li>
+  <li><a href="#jufo"><span class="k">9</span>Für Jugend forscht</a></li>
+</ul>
+
+<figure>
+<svg viewBox="0 0 820 250" role="img" aria-label="Entscheidungspfad: Erkennung, Sensorprinzip, Übertragung, Funkart, Knoten">
+  <style>
+    .lbl{font-family:"IBM Plex Sans",system-ui,sans-serif;font-size:11.5px;fill:var(--ink)}
+    .hd{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:12px;font-weight:600;fill:var(--ink-2);letter-spacing:.04em}
+    .bx{fill:var(--drop-bg);stroke:var(--line)}
+    .bxp{fill:var(--pick-bg);stroke:var(--pick);stroke-width:1.5}
+    .ln{stroke:var(--pick);stroke-width:1.5;fill:none}
+  </style>
+  <!-- Spalte 1: Erkennung -->
+  <text x="10" y="18" class="hd">ERKENNUNG</text>
+  <rect x="10" y="30" width="130" height="24" class="bx" rx="2"/><text x="18" y="46" class="lbl">Kamera stationär</text>
+  <rect x="10" y="60" width="130" height="24" class="bx" rx="2"/><text x="18" y="76" class="lbl">Drohne</text>
+  <rect x="10" y="90" width="130" height="24" class="bx" rx="2"/><text x="18" y="106" class="lbl">Lidar</text>
+  <rect x="10" y="120" width="130" height="24" class="bxp" rx="2"/><text x="18" y="136" class="lbl">Sensor je Lücke</text>
+  <rect x="10" y="150" width="130" height="24" class="bx" rx="2"/><text x="18" y="166" class="lbl">Fahrzeug-/Handydaten</text>
+  <rect x="10" y="180" width="130" height="24" class="bx" rx="2"/><text x="18" y="196" class="lbl">Zählen an Schranke</text>
+  <!-- Spalte 2: Sensorprinzip -->
+  <text x="180" y="18" class="hd">SENSORPRINZIP</text>
+  <rect x="180" y="30" width="130" height="24" class="bx" rx="2"/><text x="188" y="46" class="lbl">Induktionsschleife</text>
+  <rect x="180" y="60" width="130" height="24" class="bx" rx="2"/><text x="188" y="76" class="lbl">Gewicht (DMS)</text>
+  <rect x="180" y="90" width="130" height="24" class="bxp" rx="2"/><text x="188" y="106" class="lbl">Magnetfeld</text>
+  <rect x="180" y="120" width="130" height="24" class="bx" rx="2"/><text x="188" y="136" class="lbl">Ultraschall</text>
+  <rect x="180" y="150" width="130" height="24" class="bx" rx="2"/><text x="188" y="166" class="lbl">Radar</text>
+  <rect x="180" y="180" width="130" height="24" class="bx" rx="2"/><text x="188" y="196" class="lbl">Infrarot / ToF</text>
+  <!-- Spalte 3: Übertragung -->
+  <text x="350" y="18" class="hd">ÜBERTRAGUNG</text>
+  <rect x="350" y="30" width="110" height="24" class="bx" rx="2"/><text x="358" y="46" class="lbl">verdrahtet</text>
+  <rect x="350" y="60" width="110" height="24" class="bxp" rx="2"/><text x="358" y="76" class="lbl">Funk</text>
+  <!-- Spalte 4: Funkart -->
+  <text x="500" y="18" class="hd">FUNKART</text>
+  <rect x="500" y="30" width="120" height="24" class="bx" rx="2"/><text x="508" y="46" class="lbl">WLAN</text>
+  <rect x="500" y="60" width="120" height="24" class="bx" rx="2"/><text x="508" y="76" class="lbl">Bluetooth LE</text>
+  <rect x="500" y="90" width="120" height="24" class="bx" rx="2"/><text x="508" y="106" class="lbl">Zigbee / Thread</text>
+  <rect x="500" y="120" width="120" height="24" class="bxp" rx="2"/><text x="508" y="136" class="lbl">LoRa / LoRaWAN</text>
+  <rect x="500" y="150" width="120" height="24" class="bx" rx="2"/><text x="508" y="166" class="lbl">NB-IoT / LTE-M</text>
+  <rect x="500" y="180" width="120" height="24" class="bx" rx="2"/><text x="508" y="196" class="lbl">Mioty, Sigfox</text>
+  <!-- Spalte 5: Knoten -->
+  <text x="660" y="18" class="hd">KNOTEN</text>
+  <rect x="660" y="30" width="150" height="24" class="bxp" rx="2"/><text x="668" y="46" class="lbl">ESP32-C3 + Batterie</text>
+  <rect x="660" y="60" width="150" height="24" class="bx" rx="2"/><text x="668" y="76" class="lbl">STM32L0, nRF52, AVR</text>
+  <!-- Verbindungen vom gewählten Kasten zur nächsten Spalte -->
+  <path class="ln" d="M140 132 C160 132 160 102 180 102"/>
+  <path class="ln" d="M310 102 C330 102 330 72 350 72"/>
+  <path class="ln" d="M460 72 C480 72 480 132 500 132"/>
+  <path class="ln" d="M620 132 C640 132 640 42 660 42"/>
+  <text x="10" y="238" class="lbl" fill="var(--ink-3)">Grün: gewählter Weg. Grau: geprüft und verworfen, bleibt aber im Blick (Kapitel 1, „Schwarzer Schwan“).</text>
+</svg>
+<figcaption>Der Pfad durch das Projekt. Jede Spalte ist eine Entscheidung, jede Entscheidung hat ein Kapitel.</figcaption>
+</figure>
+
+<!-- ============================================================ K1 -->
+<h2 id="k1"><span class="k">KAPITEL 1</span>Wie erkennt man eine freie Lücke?</h2>
+<p class="frage">Idee: freie Parkplätze finden und die Information einem Parksystem zur Verfügung stellen. Womit stellt man „frei“ überhaupt fest?</p>
+<p>Es gibt mehr Wege, als man zuerst denkt. Alle gehören auf den Tisch, auch die, die wir nicht nehmen. Der Grund steht unten im gelben Kasten.</p>
+<div class="tw"><table>
+<thead><tr><th>Weg</th><th>Dafür</th><th>Dagegen</th><th>Was es kippen könnte</th></tr></thead>
+<tbody>
+<tr><td class="t">Kamera, stationär<br><span class="eyebrow">Mast, Fassade, Laterne</span></td><td class="d">Eine Kamera deckt 50 bis 500 Plätze. Kein Bauteil je Lücke. Bilderkennung ist heute billig; unser Vorversuch in <code>kamera/</code> zählt 490 Plätze in 1,5 s.</td><td class="d">Braucht Sicht: Lieferwagen, Bäume, Nacht, Regen, Schnee. Braucht Mast, Strom und Netz. Filmt Menschen und Kennzeichen, also Datenschutz und Akzeptanz. Straßenrand ist von einem Punkt selten ganz einsehbar.</td><td class="d">Akku-Funkkameras mit Erkennung auf dem Gerät für 30 € und Solarzelle: dann eine je Straßenzug, kein Mast, kein Kabel.</td></tr>
+<tr><td class="t">Drohne mit Kamera</td><td class="d">Keine Installation. Große Fläche in Minuten. Für Freiflächen ideal, dieselbe Bildauswertung wie oben.</td><td class="d">Recht: Flug über Wohngebieten und Menschen ist erlaubnispflichtig, nur in Sichtweite. 20 bis 30 min Flugzeit, Wetter. Ein Flug alle x Minuten ist keine Echtzeit. Kosten je Flug.</td><td class="d">Lockerung der Drohnenregeln in der Stadt, Lieferdrohnen-Korridore: Kurierdrohnen scannen Parkplätze nebenbei, die Information fällt gratis ab.</td></tr>
+<tr><td class="t">Lidar / Laser</td><td class="d">Misst Geometrie, nicht Farbe: unabhängig von Licht, nachts gleich gut. Keine Gesichter, keine Kennzeichen lesbar.</td><td class="d">Teuer (hunderte bis tausende €). Verdeckung wie bei der Kamera. Regen und Schnee streuen. Montage und Strom wie Kamera.</td><td class="d">Preisverfall durch Auto-Lidar: von 75 000 $ auf unter 500 $ in zehn Jahren, Solid-State-Sensoren ohne bewegte Teile kommen.</td></tr>
+<tr class="pick"><td class="t">Sensor je Lücke</td><td class="d">Misst genau dort, wo das Auto steht. Kein Sichtproblem, kein Wetterproblem, kein Bild, kein Personenbezug. Funktioniert im Parkhaus und unter Bäumen. Einbau am Bordstein ohne Tiefbau möglich.</td><td class="d">Je Lücke ein Gerät: Kosten mal N. Batterie, Wartung, Vandalismus. Die Zuordnung Sensor ↔ Position muss gepflegt werden.</td><td class="d">Nichts macht ihn unbrauchbar, höchstens billiger. Konkurrenz nur über den Preis der Alternativen.</td></tr>
+<tr><td class="t">Fahrzeug- und Handydaten</td><td class="d">Null eigene Hardware. Moderne Autos wissen, wann sie ein- und ausparken; Handys wissen, wo ihr Besitzer aussteigt.</td><td class="d">Abdeckung: nur vernetzte Autos, nur Nutzer der App. Daten gehören Herstellern und Konzernen. Massiver Personenbezug.</td><td class="d">Ein Hersteller oder Kartendienst öffnet seine Parkdaten als API. Dann ist die Lücke schon bekannt, bevor wir messen.</td></tr>
+<tr><td class="t">Zählen an der Einfahrt</td><td class="d">Standard in jedem Parkhaus: Schranke zählt rein und raus, Differenz ist frei. Billig, bewährt.</td><td class="d">Nur für umschlossene Flächen. Weiß nicht, <em>welcher</em> Platz frei ist. Am Straßenrand unmöglich.</td><td class="d">Nichts; die Grenze ist prinzipiell.</td></tr>
+</tbody></table></div>
+
+<div class="swanbox"><b>Warum die verworfenen Wege im Blick bleiben.</b> Eine Technologie- oder Gesetzesänderung kann einen Weg in kurzer Zeit von „unmachbar oder teuer“ zu „leicht und billig“ machen: Drohnenregeln, Kurierdrohnen, Preisverfall bei Funkkameras oder Lidar, offene Fahrzeugdaten. Tritt so ein <em>Schwarzer Schwan</em> ein, ist eine Investition in die andere Technik verloren. Zwei Konsequenzen: erstens einmal im Jahr die Tabelle oben neu bewerten; zweitens die Architektur so bauen, dass die Sensorik austauschbar ist. Deshalb kennt unser Server nur <code>sensor_id</code> + frei/belegt. Eine Kamera oder Drohne wäre später einfach ein Gateway mit vielen „virtuellen Sensoren“, Server und App bleiben (siehe <code>PROJEKT_PROMPT.md</code>, §7).</div>
+
+<div class="fazit"><b>Fazit.</b> Der Sensor je Lücke ist derzeit die robusteste Lösung: unabhängig von Sicht, Wetter, Recht und Datenschutz, und am Straßenrand der einzige Weg, der ohne Mast und Tiefbau auskommt. Der Preis dafür ist die Stückzahl, also muss der Sensor billig, wartungsarm und leicht einzubauen sein. Das bestimmt alle folgenden Entscheidungen.</div>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 6 h</span></h4>
+<ul>
+  <li><b>Stand der Technik recherchieren:</b> kommerzielle Parksensoren (Bosch, PlacePod, Fleximodo, Mokosmart), Parkleitsysteme, Preise. <code>docs/internetrecherche.txt</code> ist der Anfang.</li>
+  <li><b>Bewerten lernen:</b> eine Nutzwerttabelle (Kriterien, Gewichte, Punkte) statt Bauchgefühl. Das ist genau das, was die Jury unter „wissenschaftlich vorgehen“ versteht.</li>
+  <li><b>Begriffe:</b> Parkleitsystem, Belegungsgrad, Echtzeit, Datenschutz-Grundverordnung (DSGVO), Personenbezug.</li>
+</ul></div>
+
+<!-- ============================================================ K2 -->
+<h2 id="k2"><span class="k">KAPITEL 2</span>Welcher Sensor je Lücke?</h2>
+<p class="frage">Ein Auto steht auf oder neben dem Sensor. Welche physikalische Größe ändert sich dadurch, und womit misst man sie?</p>
+<div class="tw"><table>
+<thead><tr><th>Prinzip</th><th>Was sich ändert</th><th>Dafür</th><th>Dagegen</th></tr></thead>
+<tbody>
+<tr><td class="t">Induktionsschleife</td><td class="d">Drahtschleife im Asphalt; Metall darüber ändert ihre Induktivität.</td><td class="d">Der Standard an jeder Ampel. Sehr zuverlässig, seit Jahrzehnten bewährt.</td><td class="d">Straße aufsägen, Strom und Auswertung über Kabel. Nicht nachrüstbar am Bordstein, Kosten im vierstelligen Bereich je Schleife.</td></tr>
+<tr><td class="t">Gewicht (DMS, Wägezelle)</td><td class="d">Ein Dehnungsmessstreifen misst die Verformung einer Platte unter Last.</td><td class="d">Eindeutig: eine Tonne ist ein Auto, ein Fußgänger nicht.</td><td class="d">Bauwerk im Boden, teuer, Temperaturdrift und Kriechen des Materials, Wasser.</td></tr>
+<tr class="pick"><td class="t">Magnetfeldverzerrung</td><td class="d">Der Stahl der Karosserie verbiegt das Erdmagnetfeld in seiner Umgebung.</td><td class="d">Chip für 1 bis 3 €, Strom im Mikroampere-Bereich, passiv (sendet nichts aus, kein Bild). Aufkleben oder flach einlassen genügt.</td><td class="d">Nachbarauto und Störer (Einkaufswagen, Fahrrad) wirken mit. Drift durch Temperatur. Braucht Kalibrierung. Aluminium-Karosserien geben weniger Signal.</td></tr>
+<tr><td class="t">Ultraschall</td><td class="d">Laufzeit eines Schallpulses zum nächsten Hindernis.</td><td class="d">HC-SR04 für 2 €, direkte Abstandsmessung, einfach zu verstehen.</td><td class="d">Hält Fußgänger, Fahrräder und Laub für Autos. Membran verschmutzt, Wetter. Muss von oben oder seitlich auf die Lücke schauen.</td></tr>
+<tr><td class="t">Radar (24 / 60 GHz)</td><td class="d">Laufzeit und Dopplerverschiebung einer Mikrowelle.</td><td class="d">Unempfindlich gegen Schmutz, Nebel, Dunkelheit. Misst Abstand und Bewegung.</td><td class="d">Module 5 bis 20 €, mehr Strom, Montage mit Blickrichtung, Funkzulassung.</td></tr>
+<tr><td class="t">Infrarot / Time-of-Flight</td><td class="d">Laufzeit eines Lichtpulses (VL53L1X und ähnliche).</td><td class="d">Sehr klein und billig, genau auf wenige Millimeter.</td><td class="d">Sonnenlicht blendet, Schmutz auf der Optik, Reichweite 1 bis 4 m.</td></tr>
+</tbody></table></div>
+<p>Kommerzielle Bodensensoren kombinieren meist <b>Magnetometer + Radar</b>: das Magnetometer läuft dauernd und kostet fast keinen Strom, das Radar wird nur zur Bestätigung aufgeweckt. Für uns ist das der Ausblick, nicht der Anfang.</p>
+<div class="fazit"><b>Entscheidung: Magnetfeld.</b> Billigster Chip, kleinster Strom, keine bewegten oder verschmutzenden Teile, kein Bild. Die Schwächen (Nachbarauto, Drift) sind genau das, was sich messen und in einer Jugend-forscht-Arbeit auswerten lässt.</div>
+
+<h3>Theorie: warum ein Auto das Magnetfeld verbiegt</h3>
+<p>Das Erdmagnetfeld ist überall vorhanden, in Deutschland etwa <b>48 µT</b> (Mikrotesla), und zeigt schräg nach unten Richtung Norden. Es ist ein <b>Vektor</b> mit drei Komponenten Bx, By, Bz. Stahl ist <b>ferromagnetisch</b>: er leitet Feldlinien viel besser als Luft und zieht sie in sich hinein. Ein Auto mit einer Tonne Stahl bündelt die Feldlinien, und in seiner Umgebung, ein bis zwei Meter weit, wird das Feld dadurch um einige µT stärker oder schwächer. Genau diese Abweichung vom Ruhefeld messen wir.</p>
+<p>Gemessen wird nicht Bx, By, Bz einzeln, sondern der <b>Betrag</b> |B| = √(Bx² + By² + Bz²), Pythagoras in drei Dimensionen. Grund: der Betrag ändert sich nicht, wenn man den Sensor dreht oder kippt; die einzelnen Achsen schon. Bei |B| ≈ 1700 Zählern verschiebt schon 1° Kippung eine Achse um 1700 · π/180 ≈ 30 Zähler, fast so viel wie ein Auto. Der Betrag ändert sich nur, wenn wirklich Eisen in der Nähe ist. Erkennung: Ruhewert ohne Auto kalibrieren, Wert mit Auto kalibrieren, <b>Schwelle mit Hysterese</b> dazwischen (heute 60 % ein, 40 % aus), damit ein Wert an der Grenze nicht flackert.</p>
+
+<h3>Welche Sensoren es gibt</h3>
+<div class="tw"><table>
+<thead><tr><th>Bauart</th><th>Beispiele</th><th>Eigenschaften</th></tr></thead>
+<tbody>
+<tr><td class="t">Hall-Sensor</td><td class="d">A3144, SS49E</td><td class="d">Misst starke Felder von Magneten (mT). Für das Erdfeld (µT) zu grob.</td></tr>
+<tr class="pick"><td class="t">AMR / MEMS-Magnetometer</td><td class="d"><b>QMC5883L / QMC5883P</b> (auf dem GY-271-Board, ≈ 2 €), HMC5883L (abgekündigt), LIS3MDL, MMC5603, BMM150</td><td class="d">Drei Achsen, Auflösung 0,1 bis 0,2 µT, I²C-Anschluss, 1 bis 3 €. Das ist der Chip aus jedem Handy-Kompass. Unser Sensor: GY-271.</td></tr>
+<tr><td class="t">Fluxgate</td><td class="d">FLC100, Bartington</td><td class="d">Präzisionsinstrument für Geophysik, nT-Auflösung. Teuer, stromhungrig, für uns überdimensioniert.</td></tr>
+<tr><td class="t">TMR / GMR</td><td class="d">TMR2305, NVE-Sensoren</td><td class="d">Sehr empfindlich, oft nur eine Achse, für Industrie. Möglich, aber ohne Vorteil gegenüber AMR.</td></tr>
+</tbody></table></div>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 14 h</span></h4>
+<ul>
+  <li><b>Physik:</b> Magnetfeld als Vektor, Einheit Tesla, Erdmagnetfeld, Ferromagnetismus, Feldlinienbild eines Stahlkörpers im Feld. Schulbuch Klasse 9/10 plus eine Stunde mit einem Kompass und einer Hantelscheibe.</li>
+  <li><b>Mathematik:</b> Betrag eines Vektors (Pythagoras in 3D), Bogenmaß für die Kipp-Abschätzung, Mittelwert und Streuung einer Messreihe.</li>
+  <li><b>Sensorik:</b> Datenblatt QMC5883L lesen (Auflösung, Messbereich, Strom, Adresse), Rauschen, Drift, Kalibrierung, Schwelle und Hysterese.</li>
+  <li><b>Begriffe:</b> Magnetometer, Achse, Betrag, Offset, Hysterese, Auflösung, Rauschen, Drift, I²C.</li>
+</ul></div>
+
+<!-- ============================================================ K3 -->
+<h2 id="k3"><span class="k">KAPITEL 3</span>Wie kommt die Meldung heraus?</h2>
+<p class="frage">Der Sensor weiß „belegt“ oder „frei“. Das Parksystem sitzt irgendwo im Internet. Wie fragt man den Sensor ab?</p>
+<div class="two">
+  <div class="box"><h4>Verdrahtet</h4>
+    <ul>
+      <li>Bus je Reihe (RS-485, 1-Wire) oder Ethernet mit Stromversorgung über das Kabel (PoE).</li>
+      <li><b>Dafür:</b> kein Batterieproblem, störsicher, unbegrenzte Datenmenge.</li>
+      <li><b>Dagegen:</b> Kabel zu jeder Lücke heißt Tiefbau. Am Straßenrand unbezahlbar, im Neubau-Parkhaus denkbar.</li>
+    </ul>
+  </div>
+  <div class="box"><h4>Funk <span class="pill pick">gewählt</span></h4>
+    <ul>
+      <li>Der Sensor bleibt ein Kästchen, das man hinlegt oder anklebt. Kein Kabel, kein Bauantrag.</li>
+      <li><b>Dafür:</b> Einbau in Minuten, austauschbar, nachrüstbar.</li>
+      <li><b>Dagegen:</b> Batterie muss Jahre halten, Reichweite ist begrenzt, Funkregeln gelten.</li>
+    </ul>
+  </div>
+</div>
+<p>Der Wunsch, Sensoren mit so wenig Kosten wie möglich einzubauen, entscheidet: <b>Funk</b>. Damit stellt sich die nächste Frage: welcher?</p>
+<div class="tw"><table>
+<thead><tr><th>Funkart</th><th>Frequenz</th><th>Reichweite</th><th>Strom</th><th>Infrastruktur / Kosten</th><th>Urteil</th></tr></thead>
+<tbody>
+<tr><td class="t">WLAN</td><td>2,4 GHz</td><td>30–50 m</td><td>hoch (80–100 mA aktiv)</td><td class="d">überall vorhanden, aber fremdes Netz nötig</td><td class="d">Für Batteriebetrieb ungeeignet; gut zum Konfigurieren per Handy.</td></tr>
+<tr><td class="t">Bluetooth LE</td><td>2,4 GHz</td><td>10–50 m</td><td>sehr niedrig</td><td class="d">Gateway alle 30 m</td><td class="d">Zu kurz für einen Straßenzug.</td></tr>
+<tr><td class="t">Zigbee / Thread</td><td>2,4 GHz</td><td>10–100 m, Mesh</td><td>niedrig</td><td class="d">Mesh-Router brauchen Dauerstrom</td><td class="d">Mesh am Bordstein ohne Steckdose funktioniert nicht.</td></tr>
+<tr class="pick"><td class="t">LoRa (roh)</td><td>433 / 868 MHz</td><td>einige 100 m bis km</td><td>sehr niedrig, µA im Schlaf</td><td class="d">eigenes Gateway, Module 5 €, lizenzfrei, keine Gebühren</td><td class="d"><b>Prototyp.</b> Ein Gateway am Fenster deckt die Straße.</td></tr>
+<tr><td class="t">LoRaWAN</td><td>868 MHz</td><td>wie LoRa</td><td>wie LoRa</td><td class="d">Netzstandard über LoRa; öffentliche Gateways (The Things Network), Schlüssel, Registrierung</td><td class="d"><b>Produktweg.</b> Gleiche Hardware, mehr Protokoll. Kommerzielle Parksensoren sind alle LoRaWAN.</td></tr>
+<tr><td class="t">NB-IoT / LTE-M</td><td>Mobilfunk</td><td>überall</td><td>hoch beim Senden</td><td class="d">SIM je Sensor, Modul 10–20 €, ≈ 1 € je Monat und Sensor</td><td class="d">Kein Gateway nötig, aber laufende Kosten mal N.</td></tr>
+<tr><td class="t">Mioty, Sigfox</td><td>868 MHz</td><td>km</td><td>sehr niedrig</td><td class="d">Mioty jung und robust, Sigfox wirtschaftlich gescheitert</td><td class="d">Beobachten. Ein Kandidat für den Schwarzen Schwan.</td></tr>
+<tr><td class="t">Einfaches 433-MHz-Modul (ASK/FSK)</td><td>433 MHz</td><td>50–100 m</td><td>niedrig</td><td class="d">1 €, keine Fehlerkorrektur</td><td class="d">Zu unzuverlässig, zu kurz.</td></tr>
+</tbody></table></div>
+<div class="fazit"><b>Entscheidung: LoRa.</b> Einige hundert Meter durch eine Wohnstraße ohne fremde Infrastruktur, Mikroampere im Schlaf, Module für 5 €, lizenzfrei und ohne Gebühren. Zuerst roh mit eigenem Gateway (weniger Protokoll, alles selbst in der Hand), später LoRaWAN, wenn es ein Produkt wird.</div>
+<p><b>Frequenz.</b> In Europa ist 868 MHz das übliche Band für solche Geräte (25 mW, 1 % Sendezeit). Unsere Module sind SX1278, die können nur bis 525 MHz, deshalb <b>433 MHz</b> (10 mW, 10 % Sendezeit, Allgemeinzuteilung der Bundesnetzagentur). Die längere Welle kommt sogar etwas besser um Autos und Ecken; die Antenne ist mit 17 cm doppelt so lang. Beides ist ohne Lizenz erlaubt, solange Leistung und Sendezeit eingehalten werden. Das Dokument der Bundesnetzagentur gehört in die Quellen der Arbeit.</p>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 12 h</span></h4>
+<ul>
+  <li><b>Physik:</b> Frequenz und Wellenlänge, c = λ · f (433 MHz → 69 cm, Antenne λ/4 ≈ 17 cm). Warum längere Wellen besser um Hindernisse kommen.</li>
+  <li><b>Dezibel:</b> dBm und dB als Logarithmus (Klasse 10). 10 dBm = 10 mW, jede 3 dB verdoppeln. Empfangsstärke RSSI, Rauschabstand SNR, warum LoRa unter dem Rauschen noch liest (Spreizfaktor, qualitativ).</li>
+  <li><b>Regeln:</b> Allgemeinzuteilung 433 MHz und 868 MHz der Bundesnetzagentur: Leistung, Sendezeitanteil. Duty Cycle rechnen: 60 ms je Paket, 10 % der Stunde.</li>
+  <li><b>Begriffe:</b> Transceiver, Modulation, Bandbreite, Spreizfaktor, Sync-Wort, Paket, Prüfsumme (CRC), Wiederholung, Bestätigung (ACK), Gateway, Duty Cycle, SRD-Band, LoRaWAN, TTN.</li>
+</ul></div>
+
+<!-- ============================================================ K4 -->
+<h2 id="k4"><span class="k">KAPITEL 4</span>Wie ist ein Sensorknoten aufgebaut?</h2>
+<p class="frage">Ein Kästchen am Bordstein, das jahrelang ohne Steckdose misst und funkt. Aus welchen Teilen besteht es, und welche kommen infrage?</p>
+<figure>
+<svg viewBox="0 0 760 210" role="img" aria-label="Blockschaltbild Sensorknoten: Batterie, Spannungsregler, Mikrocontroller ESP32-C3, Magnetometer über I²C, Funkmodul SX1278 über SPI, Antenne">
+  <style>
+    .b{fill:var(--paper);stroke:var(--ink-2);stroke-width:1.2}
+    .bp{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+    .t1{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:14px;font-weight:600;fill:var(--ink)}
+    .t2{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-2)}
+    .w{stroke:var(--ink-2);stroke-width:1.3;fill:none}
+    .wl{font-family:"IBM Plex Mono",monospace;font-size:10.5px;fill:var(--ink-3)}
+  </style>
+  <rect x="20" y="70" width="120" height="70" class="b" rx="3"/>
+  <text x="32" y="95" class="t1">Batterie</text><text x="32" y="112" class="t2">3–4,2 V</text><text x="32" y="126" class="t2">z. B. 18650, 2 × AA</text>
+  <rect x="170" y="70" width="110" height="70" class="b" rx="3"/>
+  <text x="182" y="95" class="t1">Regler</text><text x="182" y="112" class="t2">3,3 V, LDO</text><text x="182" y="126" class="t2">Ruhestrom &lt; 5 µA!</text>
+  <rect x="320" y="50" width="150" height="110" class="bp" rx="3"/>
+  <text x="332" y="76" class="t1">Mikrocontroller</text><text x="332" y="93" class="t2">ESP32-C3</text><text x="332" y="108" class="t2">Deep Sleep ≈ 5 µA</text><text x="332" y="122" class="t2">misst, entscheidet,</text><text x="332" y="136" class="t2">schläft</text>
+  <rect x="520" y="20" width="130" height="60" class="b" rx="3"/>
+  <text x="532" y="42" class="t1">Magnetometer</text><text x="532" y="58" class="t2">QMC5883 (GY-271)</text><text x="532" y="72" class="t2">I²C, 2 Leitungen</text>
+  <rect x="520" y="120" width="130" height="60" class="b" rx="3"/>
+  <text x="532" y="142" class="t1">Funkmodul</text><text x="532" y="158" class="t2">SX1278, 433 MHz</text><text x="532" y="172" class="t2">SPI, 4 Leitungen</text>
+  <path class="w" d="M140 105 H170"/><path class="w" d="M280 105 H320"/>
+  <path class="w" d="M470 80 C495 80 495 50 520 50"/><text x="478" y="44" class="wl">SDA/SCL</text>
+  <path class="w" d="M470 130 C495 130 495 150 520 150"/><text x="478" y="170" class="wl">MOSI/MISO/SCK/NSS</text>
+  <path class="w" d="M650 150 H690 V95"/><path class="w" d="M690 95 v-40"/><path class="w" d="M684 60 l6 -8 l6 8"/>
+  <text x="700" y="120" class="wl">Antenne</text><text x="700" y="134" class="wl">17 cm</text>
+  <text x="20" y="190" class="wl">Alles läuft mit 3,3 V. Im Schlaf zählt die Summe der Ruheströme: Controller + Regler + Sensor + Funkmodul.</text>
+</svg>
+<figcaption>Vier Bausteine: Energie, Rechner, Sensor, Funk. Dazu ein Gehäuse und die Antenne.</figcaption>
+</figure>
+
+<h3>Der Mikrocontroller</h3>
+<div class="tw"><table>
+<thead><tr><th>Kandidat</th><th>Dafür</th><th>Dagegen</th></tr></thead>
+<tbody>
+<tr class="pick"><td class="t">ESP32-C3<br><span class="eyebrow">Mini-Board, 2–4 €</span></td><td class="d">Billig, WLAN und Bluetooth eingebaut (Kalibrieren per Handy über ein eigenes WLAN, wie heute), Deep Sleep um 5 µA, riesige Arduino-Gemeinde: der KI-Agent kennt ihn besser als jeden anderen.</td><td class="d">Fertige Boards haben USB-Chip und LEDs, die im Schlaf Strom ziehen. Für die Batterieversion braucht es ein sparsames Board oder das nackte Modul.</td></tr>
+<tr><td class="t">ESP32-S3 / WROOM</td><td class="d">Mehr Rechenleistung, mehr Pins.</td><td class="d">Mehr Strom, größer, hier ohne Nutzen.</td></tr>
+<tr><td class="t">ATmega328 (Arduino Pro Mini)</td><td class="d">Sehr sparsam, einfach, seit 15 Jahren Standard.</td><td class="d">8 Bit, 16 MHz, kein Funk, kein WLAN zum Konfigurieren.</td></tr>
+<tr><td class="t">STM32L0 / L4</td><td class="d">Industriestandard für Batteriegeräte, µA-Betrieb, präzise.</td><td class="d">Steilere Lernkurve, weniger Anfängermaterial.</td></tr>
+<tr><td class="t">nRF52840</td><td class="d">Bluetooth LE, extrem sparsam.</td><td class="d">Teurer, Bluetooth hilft uns nicht.</td></tr>
+<tr><td class="t">RP2040 (Pico)</td><td class="d">Billig, gut dokumentiert.</td><td class="d">Schlafbetrieb schwach, kein Funk.</td></tr>
+</tbody></table></div>
+
+<h3>Energie: wie lange hält die Batterie?</h3>
+<p>Ein Sensorknoten verbringt 99,9 % seiner Zeit im Schlaf. Was zählt, ist der <b>mittlere Strom</b>: Schlafstrom plus die kurzen Aufwachphasen zum Messen plus die seltenen Sendungen. Laufzeit = nutzbare Kapazität geteilt durch mittleren Strom. Der Rechner unten zeigt, was eine Entwurfsentscheidung kostet. Die Voreinstellung „heute“ ist unsere aktuelle Firmware, bei der das WLAN-Portal dauernd läuft.</p>
+
+<div class="calc" id="calc">
+  <div class="presets">
+    <button type="button" id="preset-heute" data-preset="heute" aria-pressed="true">Heute: WLAN-Portal dauernd an</button>
+    <button type="button" id="preset-ziel" data-preset="ziel" aria-pressed="false">Ziel: Deep Sleep</button>
+    <button type="button" id="preset-industrie" data-preset="industrie" aria-pressed="false">Industrie: LiSOCl₂, ~10 Jahre</button>
+  </div>
+  <div class="grid">
+    <label for="c-cap">Batterie, nutzbar<span><input id="c-cap" type="number" min="1" step="50" value="2000"> mAh</span></label>
+    <label for="c-sleep">Schlafstrom gesamt<span><input id="c-sleep" type="number" min="0" step="1" value="90000"> µA</span></label>
+    <label for="c-int">Messintervall<span><input id="c-int" type="number" min="0.05" step="0.5" value="2"> s</span></label>
+    <label for="c-mdur">Dauer je Messung<span><input id="c-mdur" type="number" min="0" step="5" value="20"> ms</span></label>
+    <label for="c-mcur">Strom beim Messen<span><input id="c-mcur" type="number" min="0" step="1" value="20"> mA</span></label>
+    <label for="c-ev">Wechsel belegt/frei je Tag<span><input id="c-ev" type="number" min="0" step="1" value="10"></span></label>
+    <label for="c-hb">Lebenszeichen alle<span><input id="c-hb" type="number" min="1" step="1" value="15"> min</span></label>
+    <label for="c-rep">Sendungen je Ereignis<span><input id="c-rep" type="number" min="1" step="1" value="3"></span></label>
+    <label for="c-tdur">Sendedauer je Paket<span><input id="c-tdur" type="number" min="0" step="10" value="60"> ms</span></label>
+    <label for="c-tcur">Strom beim Senden<span><input id="c-tcur" type="number" min="0" step="10" value="120"> mA</span></label>
+  </div>
+  <div class="out">
+    <div><div class="v" id="o-day">–</div><div class="l">Verbrauch je Tag</div><div class="sub" id="o-split"></div></div>
+    <div><div class="v" id="o-avg">–</div><div class="l">mittlerer Strom</div></div>
+    <div><div class="v" id="o-life">–</div><div class="l">Laufzeit</div><div class="sub" id="o-life2"></div></div>
+  </div>
+</div>
+<p>Was die Zahlen sagen: mit dauernd laufendem WLAN ist eine 18650-Zelle in <b>einem Tag</b> leer. Mit Deep Sleep und einer Messung alle zwei Sekunden hält dieselbe Zelle <b>etwa ein Jahr</b>, und der größte Posten ist dann nicht das Funken, sondern das Aufwachen zum Messen. Wer das Messintervall auf 5 s streckt oder den Sensor selbst per Interrupt wecken lässt, verdoppelt die Laufzeit. Deshalb gehört „Deep Sleep, WLAN nur zum Kalibrieren“ als erste Änderung in die Aufgabe an den KI-Agenten.</p>
+
+<h3>Batterie und Laden</h3>
+<div class="tw"><table>
+<thead><tr><th>Option</th><th>Dafür</th><th>Dagegen</th></tr></thead>
+<tbody>
+<tr><td class="t">Li-Ion 18650, 2500–3500 mAh</td><td class="d">Billig, überall, wiederaufladbar, 3,7 V passt mit LDO.</td><td class="d">Unter 0 °C schlecht, Schutzschaltung nötig, Laden im Gerät heißt Elektronik dazu.</td></tr>
+<tr><td class="t">LiFePO₄</td><td class="d">3,2 V, robust, viele Zyklen, temperaturfester, direkt ohne Regler an 3,3-V-Logik möglich.</td><td class="d">Weniger Energiedichte, weniger verbreitet.</td></tr>
+<tr class="pick"><td class="t">2 × AA Lithium (z. B. L91)</td><td class="d">−40 bis 60 °C, 3000 mAh, 3 V ohne Regler, 10 Jahre lagerbar. Wechsel in einer Minute.</td><td class="d">Nicht wiederaufladbar, Wechsel etwa jährlich. Für Prototyp und Feldversuch die einfachste Wahl.</td></tr>
+<tr><td class="t">LiSOCl₂ (Lithium-Thionylchlorid)</td><td class="d">Der Industriestandard in Parksensoren: 5 bis 10 Jahre, extreme Temperaturen.</td><td class="d">Teuer, nicht ladbar, verträgt keine Stromspitzen ohne Pufferkondensator.</td></tr>
+<tr><td class="t">Solarzelle + Akku</td><td class="d">Theoretisch endlos.</td><td class="d">Der Sensor liegt am Bordstein im Schatten eines Autos, das ist die eine Stelle, wo keine Sonne hinkommt. Winter, Schmutz, Laub.</td></tr>
+</tbody></table></div>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 10 h</span></h4>
+<ul>
+  <li><b>Elektrik:</b> Spannung, Strom, Leistung, Kapazität in mAh und Wh, Ruhestrom, Spannungsregler (LDO) und sein Eigenverbrauch, warum 5 V ein 3,3-V-Modul zerstört.</li>
+  <li><b>Messen:</b> Strom mit dem Multimeter in Reihe messen, mA und µA getrennt; Aufwachstrom mit dem Oszilloskop oder einem Strommess-Dongle (z. B. Power Profiler).</li>
+  <li><b>Entwurf:</b> Blockschaltbild lesen und zeichnen, Energiebudget rechnen (der Rechner oben von Hand nachvollziehen).</li>
+  <li><b>Begriffe:</b> Deep Sleep, Wake-up, Interrupt, Ruhestrom, Energiebudget, LDO, Schutzschaltung, Selbstentladung, Gehäuseschutzart (IP67).</li>
+</ul></div>
+
+<!-- ============================================================ K5 -->
+<h2 id="k5"><span class="k">KAPITEL 5</span>Mikrocontroller hands-on</h2>
+<p class="frage">Die Software schreibt ein KI-Agent. Was muss man trotzdem selbst können, um ihm die Aufgabe zu stellen, das Ergebnis zu prüfen und den Prototyp auf dem Tisch zum Laufen zu bringen?</p>
+<p>Kurz: alles, was man mit den Händen tut, und alle Begriffe, die in der Aufgabe vorkommen. Eine KI kann keinen Draht anlöten, keinen Strom messen und nicht sehen, ob die LED blinkt.</p>
+
+<h3>Grundbegriffe</h3>
+<div class="two">
+  <div class="box"><h4>Der Chip</h4>
+    <ul>
+      <li><b>Mikrocontroller:</b> Rechner, Speicher und Ein-/Ausgänge auf einem Chip, ohne Betriebssystem. Ein Programm, das beim Einschalten losläuft.</li>
+      <li><b>Takt, Flash, RAM:</b> wie schnell, wie viel Programm, wie viel Arbeitsspeicher. ESP32-C3: 160 MHz, 4 MB, 400 kB.</li>
+      <li><b>GPIO / Pin:</b> ein Beinchen, das Ein- oder Ausgang sein kann. <b>Digital:</b> 0 V oder 3,3 V. <b>Analog (ADC):</b> misst eine Spannung dazwischen. <b>PWM:</b> schnelles Ein/Aus als „halbe“ Spannung.</li>
+      <li><b>Pull-up, Strapping-Pin, Boot-Modus:</b> warum manche Pins beim Einschalten nicht belegt sein dürfen (beim C3: GPIO 2, 8, 9).</li>
+    </ul>
+  </div>
+  <div class="box"><h4>Die Schnittstellen</h4>
+    <ul>
+      <li><b>UART / seriell:</b> zwei Leitungen, Text hin und her. Der serielle Monitor am PC ist das Fenster in den Chip.</li>
+      <li><b>I²C:</b> zwei Leitungen (SDA, SCL), mehrere Geräte mit Adressen. Unser Magnetometer.</li>
+      <li><b>SPI:</b> vier Leitungen (MOSI, MISO, SCK, CS), schnell, ein Gerät je CS. Unser Funkmodul.</li>
+      <li><b>Datenblatt und Pinbelegung (Pinout):</b> die zwei Dokumente, ohne die nichts geht. Lesen lernen, nicht auswendig.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Aufbau auf dem Tisch</h3>
+<ul>
+  <li><b>Breakout-Board:</b> der Chip auf einer kleinen Platine mit Stiftleisten, damit man ihn anfassen kann (GY-271, ESP32-C3 Mini, SX1278-Modul).</li>
+  <li><b>Steckbrett (Breadboard) und Dupont-Kabel:</b> Verbindungen ohne Löten. Fehlerquelle Nummer eins: lockere Kabel, vertauschte SDA/SCL, GND vergessen.</li>
+  <li><b>Löten:</b> Stiftleisten an Module, später Drähte direkt. Drei Stunden Übung an Schrott, bevor das erste Funkmodul dran ist.</li>
+  <li><b>Später eine Platine:</b> mit KiCad zeichnen, bei JLCPCB für 5 € fertigen lassen. Für Jugend forscht nicht nötig, fürs Produkt Pflicht.</li>
+  <li><b>Messen:</b> Multimeter für Spannung (parallel), Strom (in Reihe) und Durchgang (piept). Ohne Multimeter ist jede Fehlersuche Raten.</li>
+</ul>
+
+<h3>Bezug von Komponenten</h3>
+<div class="tw"><table>
+<thead><tr><th>Quelle</th><th>Wofür</th><th>Beachten</th></tr></thead>
+<tbody>
+<tr><td class="t">Berrybase, AZ-Delivery, Eckstein, Reichelt</td><td class="d">Deutsche Händler für Maker-Module, Lieferung in Tagen.</td><td class="d">Etwas teurer als China, dafür Rückgaberecht und Doku auf Deutsch.</td></tr>
+<tr><td class="t">Mouser, DigiKey, Farnell</td><td class="d">Originalbauteile mit Datenblatt, Batterien, Stecker.</td><td class="d">Mindermengenzuschlag, für Einzelchips oft zu aufwendig.</td></tr>
+<tr><td class="t">AliExpress</td><td class="d">Billigste Module, riesige Auswahl.</td><td class="d">2 bis 4 Wochen, Fälschungen, falsche Beschriftung. Beispiel aus diesem Projekt: „SX1278“ angeboten, was drin ist, sagt nur der Chipaufdruck. Antennenlänge als Gegenprobe.</td></tr>
+</tbody></table></div>
+
+<h3>Programmieren: die Arduino-Welt</h3>
+<p><b>Arduino</b> ist heute weniger ein Board als ein Ökosystem: eine Entwicklungsumgebung (Arduino-IDE oder <code>arduino-cli</code>), ein Boardpaket je Chipfamilie (hier „esp32“), Bibliotheken für Sensoren und Funkmodule (<code>Wire</code>, <code>SPI</code>, <code>LoRa</code>), und ein Programm, der <b>Sketch</b>, mit zwei Teilen: <code>setup()</code> läuft einmal beim Start, <code>loop()</code> immer wieder. Der Ablauf ist immer derselbe: Sketch schreiben oder schreiben lassen, <b>kompilieren</b> (übersetzen), <b>flashen</b> (per USB auf den Chip laden), im <b>seriellen Monitor</b> zuschauen, was der Chip meldet.</p>
+<p>Wir schreiben kein C++ selbst. Aber wer dem KI-Agenten eine Aufgabe stellt, muss die Begriffe kennen, die er braucht, und das Ergebnis prüfen können. Ein Beispiel, wie so eine Aufgabe aussieht:</p>
+<div class="prompt">Schreibe einen Arduino-Sketch für den ESP32-C3 (Board „ESP32C3 Dev Module“, USB CDC On Boot: Enabled).
+
+Hardware: Magnetometer QMC5883L an I²C, SDA = GPIO 5, SCL = GPIO 4.
+Funkmodul SX1278 an SPI: SCK 6, MISO 1, MOSI 7, NSS 10, RST 3. 433,5 MHz, SF7, BW 125 kHz, Sync-Wort 0x2A, 10 dBm.
+
+Verhalten: alle 2 s aufwachen, |B| aus 10 Messwerten mitteln, mit gespeichertem Ruhewert vergleichen. Schwelle mit Hysterese 60 %/40 % des kalibrierten Auto-Werts. Bei Wechsel belegt/frei ein Paket „PS1,<id>,<F|B>,<mV>,<seq>,<crc16>“ dreimal mit zufälligem Abstand um 1,5 s senden. Alle 15 min ein Lebenszeichen. Dazwischen Deep Sleep; Kalibrierwerte und Sequenznummer im NVS (Preferences) halten, damit sie den Schlaf überleben.
+
+Auf der seriellen Konsole (115200 Baud) jede Messung und jede Sendung als Zeile ausgeben.</div>
+<p>Was der Mensch danach tut: Pins gegen die Pinbelegung prüfen, Strom im Schlaf messen (steht der Agent bei 5 µA oder bei 20 mA, weil das WLAN noch läuft?), Paket am Empfänger sehen, Schwelle mit Hantelscheibe ausprobieren. Der Agent kann behaupten, es funktioniere; nur die Messung weiß es.</p>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 30 h</span></h4>
+<ul>
+  <li><b>Werkbank (10 h):</b> Arduino-IDE installieren, Boardpaket, Blink auf dem ESP32-C3, seriellen Monitor lesen, Taster und LED am Breadboard, Multimeter, Löten üben.</li>
+  <li><b>Sensor und Funk anschließen (12 h):</b> GY-271 per I²C lesen (Sketch von der KI), Werte am Monitor beobachten, Hantelscheibe nähern. SX1278 anlöten, zwei Boards, erstes Paket über die Luft. Fehlersuche gehört dazu und ist der Lernstoff.</li>
+  <li><b>Sketch lesen können (8 h):</b> nicht schreiben, aber verstehen, was <code>setup</code>, <code>loop</code>, eine Variable, eine Funktion, ein <code>#define</code> und eine Bibliothek sind, um zu sehen, wo der Agent die Pins und die Schwelle hingeschrieben hat.</li>
+  <li><b>Vokabeln für den Agenten:</b> Sketch, Board, Boardpaket, Bibliothek, Pinbelegung, Baudrate, flashen, Bootmodus, Strapping-Pin, Pull-up, Interrupt, Polling, Deep Sleep, Watchdog, NVS/Preferences, I²C-Adresse, SPI-CS, Prüfsumme, Sequenznummer.</li>
+</ul></div>
+
+<!-- ============================================================ K6 -->
+<h2 id="k6"><span class="k">KAPITEL 6</span>Vom Funk zum Server</h2>
+<p class="frage">LoRa-Pakete enden in einigen hundert Metern in der Luft. Wie kommen sie ins Internet, und was passiert dort mit ihnen?</p>
+<figure>
+<svg viewBox="0 0 760 130" role="img" aria-label="Kette: Sensorknoten, LoRa, Gateway mit Empfänger und Rechner, Mobilfunk oder WLAN, Server mit Datenbank, App">
+  <style>
+    .b{fill:var(--paper);stroke:var(--ink-2);stroke-width:1.2}
+    .bp{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+    .t1{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:14px;font-weight:600;fill:var(--ink)}
+    .t2{font-family:"IBM Plex Mono",monospace;font-size:11px;fill:var(--ink-2)}
+    .w{stroke:var(--ink-2);stroke-width:1.3;fill:none;marker-end:url(#arr)}
+    .wl{font-family:"IBM Plex Mono",monospace;font-size:10.5px;fill:var(--ink-3)}
+  </style>
+  <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--ink-2)"/></marker></defs>
+  <rect x="10" y="30" width="120" height="60" class="b" rx="3"/><text x="22" y="52" class="t1">Sensorknoten</text><text x="22" y="68" class="t2">frei / belegt</text><text x="22" y="82" class="t2">je Lücke einer</text>
+  <rect x="200" y="30" width="150" height="60" class="bp" rx="3"/><text x="212" y="52" class="t1">Gateway</text><text x="212" y="68" class="t2">Empfänger + Rechner</text><text x="212" y="82" class="t2">sammelt, prüft, bündelt</text>
+  <rect x="430" y="30" width="140" height="60" class="b" rx="3"/><text x="442" y="52" class="t1">Server</text><text x="442" y="68" class="t2">Datenbank, API</text><text x="442" y="82" class="t2">kennt die Koordinaten</text>
+  <rect x="640" y="30" width="110" height="60" class="b" rx="3"/><text x="652" y="52" class="t1">App</text><text x="652" y="68" class="t2">Fahrer, Betreiber</text>
+  <path class="w" d="M130 60 H198"/><text x="140" y="52" class="wl">LoRa, 100 m–km</text>
+  <path class="w" d="M350 60 H428"/><text x="356" y="52" class="wl">Mobilfunk/WLAN</text>
+  <path class="w" d="M570 60 H638"/><path class="w" d="M640 72 H572"/><text x="580" y="52" class="wl">HTTPS</text>
+  <text x="10" y="118" class="wl">Ein Gateway bedient 5 bis 50 Sensoren. Nur das Gateway braucht Internet und Strom, die Sensoren nicht.</text>
+</svg>
+</figure>
+
+<h3>Das Gateway</h3>
+<p>Ein Gateway ist ein Empfänger für die Nähe plus eine Verbindung ins Internet. Es sitzt dort, wo es Strom gibt: am Fenster über der Straße, an einer Laterne mit Netzanschluss, im Laden an der Ecke. Aufgaben: Pakete empfangen, Prüfsumme prüfen, Wiederholungen aussortieren, Zeitstempel setzen, bündeln, an den Server schicken, bei Internetausfall zwischenspeichern. In diesem Repo: ESP32 + SX1278 als Empfänger am USB-Kabel, <code>gateway.py</code> auf dem Rechner tut den Rest.</p>
+<div class="tw"><table>
+<thead><tr><th>Internetanbindung des Gateways</th><th>Dafür</th><th>Dagegen</th></tr></thead>
+<tbody>
+<tr><td class="t">WLAN eines Anwohners oder Ladens</td><td class="d">Kostenlos, Prototyp sofort.</td><td class="d">Abhängig vom Goodwill, kein Betrieb im Produkt.</td></tr>
+<tr class="pick"><td class="t">Mobilfunk (LTE-Router oder LTE-Modul, SIM)</td><td class="d">Unabhängig vom Standort, 5 bis 10 € je Monat je Gateway, nicht je Sensor.</td><td class="d">Laufende Kosten, Stromversorgung nötig.</td></tr>
+<tr><td class="t">Öffentliches LoRaWAN (The Things Network)</td><td class="d">Gateway gehört jemand anderem, wir zahlen nichts.</td><td class="d">Abdeckung nicht garantiert, Umstieg auf LoRaWAN-Protokoll nötig.</td></tr>
+<tr><td class="t">Raspberry Pi statt PC am Gateway</td><td class="d">Klein, 24/7, 3 W.</td><td class="d">SD-Karte als Schwachstelle, Wartung aus der Ferne.</td></tr>
+</tbody></table></div>
+
+<h3>Der Server und seine Datenbank, ohne SQL</h3>
+<p>Der Server nimmt die Meldungen an und beantwortet Fragen. Sein Gedächtnis ist eine <b>Datenbank</b>: Tabellen, die man sich wie Tabellenblätter vorstellen kann, nur mit Regeln. Was man verstehen muss, auch wenn der KI-Agent den Code schreibt:</p>
+<ul>
+  <li><b>Tabelle, Datensatz, Feld:</b> die Tabelle „Stellplätze“ hat je Platz einen Datensatz mit den Feldern Kennung, Breite, Länge, Name, Zustand, Zeit der letzten Meldung.</li>
+  <li><b>Schlüssel:</b> die Kennung <code>sensor_id</code> ist eindeutig; über sie findet der Server zur Meldung den Platz. Der Sensor kennt seine Position nicht, die Datenbank kennt sie.</li>
+  <li><b>Zustand gegen Verlauf:</b> eine Tabelle hält den aktuellen Zustand je Platz, eine zweite jedes Ereignis mit Zeit. Aus dem Verlauf kommt später die Statistik (Belegung nach Tageszeit).</li>
+  <li><b>Veraltung:</b> meldet ein Sensor 15 Minuten nichts, gilt sein Wert als unbekannt. Ein „frei“ von gestern ist schlimmer als keine Angabe.</li>
+  <li><b>Idempotenz:</b> dieselbe Meldung darf zweimal ankommen, ohne Schaden anzurichten. Der Server verwirft, was älter ist als das Gespeicherte. Deshalb darf das Gateway gefahrlos wiederholen.</li>
+  <li><b>Sicherung:</b> eine Datenbank ohne Backup ist eine Wette.</li>
+</ul>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 10 h</span></h4>
+<ul>
+  <li><b>Netz:</b> Client und Server, IP-Adresse, URL, HTTP mit GET und POST, JSON lesen, was eine API ist, API-Schlüssel, HTTPS. Übung: mit <code>curl</code> eine Meldung von Hand an <code>POST /api/v1/events</code> schicken und in der App sehen.</li>
+  <li><b>Gateway betreiben:</b> <code>gateway.py --port auto --dry-run --verbose</code> starten, RSSI ablesen, mit <code>--replay</code> ohne Funk vorführen.</li>
+  <li><b>Daten:</b> die Tabellen des Servers mit einem Datenbank-Browser (DB Browser for SQLite) anschauen: das reicht, um Schlüssel, Zustand und Verlauf zu begreifen.</li>
+  <li><b>Begriffe:</b> Gateway, Uplink, Endpunkt, Request, Response, Statuscode, JSON, Datensatz, Schlüssel, Zeitstempel, Idempotenz, Veraltung, Backup, Hosting.</li>
+</ul></div>
+
+<!-- ============================================================ K7 -->
+<h2 id="k7"><span class="k">KAPITEL 7</span>Fahrer und Betreiber</h2>
+<p class="frage">Die Information liegt auf dem Server. Wer braucht sie, in welcher Form, und wie kommt sie dorthin?</p>
+<div class="tw"><table>
+<thead><tr><th>Rolle</th><th>Will</th><th>Bekommt</th></tr></thead>
+<tbody>
+<tr><td class="t">Fahrer</td><td class="d">„Wo ist in meiner Nähe gerade frei?“ Ein Tipp, dann Navigation.</td><td class="d">App: Standort holen, Umkreisanfrage, Liste und Karte, Tippen öffnet die Navi-App des Handys mit genau diesem Ziel (Deep Link). Keine eigene Navigation, keine Konten, keine Bezahlung.</td></tr>
+<tr><td class="t">Betreiber</td><td class="d">Plätze anlegen, Sensoren zuordnen, tote Sensoren sehen, Belegung auswerten.</td><td class="d">Verwaltungsseite mit Schlüssel: Stammdaten pflegen, Historie, Statistik je Parkplatz.</td></tr>
+<tr><td class="t">Gateway</td><td class="d">Meldungen abliefern.</td><td class="d">Ein Endpunkt, ein Schlüssel, sonst nichts.</td></tr>
+<tr><td class="t">Fremdsysteme</td><td class="d">Parkleitsystem der Stadt, Navi-Anbieter.</td><td class="d">Dieselbe API. Das ist der Grund, die API sauber zu dokumentieren.</td></tr>
+</tbody></table></div>
+<h3>Architektur-Entscheidungen</h3>
+<div class="tw"><table>
+<thead><tr><th>Frage</th><th>Optionen</th><th>Entscheidung</th></tr></thead>
+<tbody>
+<tr><td class="t">Web-App oder native App?</td><td class="d">Native (Android/iOS): Store, zwei Codebasen, Zugriff auf alles. Web-App (PWA): eine HTML-Seite vom eigenen Server, kein Store, GPS und „zum Startbildschirm“ gehen trotzdem.</td><td class="d">Web-App. Kein Store, kein Build, dieselbe Herkunft wie die API.</td></tr>
+<tr><td class="t">Eigene Karte oder Liste + Navi?</td><td class="d">Karte braucht Kartenmaterial und Bibliothek; Liste braucht nur Entfernung.</td><td class="d">Beides: Liste zuerst, Karte mit Leaflet dazu. Navigation immer an die Navi-App übergeben.</td></tr>
+<tr><td class="t">Wie oft aktualisieren?</td><td class="d">Push (der Server meldet sich) oder Polling (die App fragt alle 10–30 s).</td><td class="d">Polling. Einfacher zu bauen und zu prüfen; Push erst bei einer echten Flotte.</td></tr>
+<tr><td class="t">Wo läuft der Server?</td><td class="d">Eigener Rechner zu Hause, Mietserver, Cloud-Dienst.</td><td class="d">PythonAnywhere, kostenlos, HTTPS geschenkt. Umzug erst bei über 50 000 Plätzen.</td></tr>
+</tbody></table></div>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 8 h</span></h4>
+<ul>
+  <li><b>Rollen und Anforderungen aufschreiben:</b> je Rolle drei Sätze „will … damit …“. Daraus ergibt sich die API fast von selbst.</li>
+  <li><b>Web-Grundlagen:</b> was eine HTML-Seite ist, was der Browser tut, was JavaScript darin darf (Standort, Anfrage an den Server), was ein Deep Link ist.</li>
+  <li><b>Geo:</b> Breite und Länge, Entfernung auf der Kugel (Haversine, sin und cos), warum man erst grob mit einem Rechteck filtert.</li>
+  <li><b>Begriffe:</b> Rolle, Anforderung, Architektur, Frontend, Backend, API-Vertrag, PWA, Deep Link, Polling, Push, Hosting, HTTPS, CORS.</li>
+</ul></div>
+
+<!-- ============================================================ K8 -->
+<h2 id="k8"><span class="k">KAPITEL 8</span>Wie man Software entwickelt</h2>
+<p class="frage">Der KI-Agent schreibt den Code. Was bleibt dann für uns? Der Prozess: sagen, was gebaut werden soll, in kleinen Schritten, mit Prüfung, mit Gedächtnis.</p>
+<div class="two">
+  <div class="box"><h4>Anforderungen</h4>
+    <ul>
+      <li>Aufschreiben, was das Ding tun soll, messbar: „meldet einen Wechsel innerhalb von 10 s“, nicht „schnell“.</li>
+      <li>Trennen: Muss, Soll, Kann. Das Kann kommt nie zuerst.</li>
+      <li>Nicht-Ziele nennen. <code>PROJEKT_PROMPT.md</code> macht das: keine Reservierung, keine Bezahlung.</li>
+    </ul>
+  </div>
+  <div class="box"><h4>Iteration</h4>
+    <ul>
+      <li>Kleinste funktionierende Version zuerst, dann erweitern. Dieses Repo hat den Server mit einem <em>Simulator</em> statt Hardware gebaut: der Server merkt keinen Unterschied.</li>
+      <li>Jeder Schritt endet mit etwas, das läuft und vorgeführt werden kann.</li>
+      <li>Was nicht läuft, wird nicht schöngeredet: „übersetzt“ ist nicht „funkt“.</li>
+    </ul>
+  </div>
+  <div class="box"><h4>Versionsverwaltung: Git und GitHub</h4>
+    <ul>
+      <li><b>Commit:</b> ein gespeicherter Stand mit Beschreibung. <b>Branch:</b> ein Nebenzweig zum Ausprobieren. <b>Pull Request:</b> Vorschlag, den Zweig zu übernehmen, mit Durchsicht.</li>
+      <li><b>Issue:</b> ein Zettel für einen Fehler oder Wunsch.</li>
+      <li>Warum: jeder Stand ist wiederherstellbar, und die Historie zeigt, wer was wann gemacht hat. Für Jugend forscht der Nachweis der eigenen Arbeit.</li>
+    </ul>
+  </div>
+  <div class="box"><h4>Tests und Dokumentation</h4>
+    <ul>
+      <li>Ein <b>Test</b> ist ein Programm, das prüft, ob ein anderes Programm tut, was es soll. Im Repo: 24 für den Server, 23 fürs Gateway. Sie sind zugleich die genaueste Beschreibung des Verhaltens.</li>
+      <li>Regel für die Arbeit mit dem Agenten: nichts übernehmen, dessen Tests nicht laufen; nichts flashen, was nicht am Monitor geprüft ist.</li>
+      <li><b>README</b> je Teil: was ist das, wie startet man es, was ist nicht getestet. Ehrlichkeit über Lücken ist Teil der Doku.</li>
+    </ul>
+  </div>
+</div>
+<h3>Mit dem KI-Agenten arbeiten</h3>
+<ul>
+  <li><b>Aufgabe stellen:</b> Hardware, Pins, Verhalten, Grenzen, was ausgegeben werden soll (siehe Beispiel in Kapitel 5). Je genauer die Vokabeln, desto besser das Ergebnis.</li>
+  <li><b>Ergebnis prüfen:</b> Tests laufen lassen, am Monitor zuschauen, messen. Der Agent kann Pins verwechseln, Bibliotheken erfinden und Strom ignorieren.</li>
+  <li><b>Verstehen, was man übernimmt:</b> jede Datei, die eingecheckt wird, muss in zwei Sätzen erklärt werden können. Das ist auch die Frage der Jury.</li>
+  <li><b>Verantwortung:</b> bleibt beim Menschen. Ein Sendeleistungs-Parameter über dem Erlaubten ist unser Verstoß, nicht der des Agenten.</li>
+</ul>
+
+<div class="lernen"><h4>Lernen dazu <span class="h">≈ 15 h</span></h4>
+<ul>
+  <li><b>Kommandozeile (5 h):</b> Ordner, Programme starten, <code>pip install</code>, <code>pytest</code>, Fehlermeldung lesen. Ohne das läuft kein Test und kein Gateway.</li>
+  <li><b>Git (4 h):</b> clone, commit, push, log, diff, branch. Eigene Änderungen unter eigenem Namen.</li>
+  <li><b>Python lesen (6 h):</b> nicht schreiben, aber <code>gateway.py</code> so weit verfolgen, dass klar ist, wo Prüfsumme, Duplikate und Warteschlange sitzen. Ein Auswerteskript für die CSV-Messdaten lässt man sich schreiben und prüft die Diagramme.</li>
+  <li><b>Begriffe:</b> Anforderung, Iteration, Prototyp, Commit, Branch, Pull Request, Issue, Test, Regression, README, Refactoring, Code-Review.</li>
+</ul></div>
+
+<!-- ============================================================ JUFO -->
+<h2 id="jufo"><span class="k">KAPITEL 9</span>Für Jugend forscht</h2>
+<p>Die Kapitel 1 bis 8 sind die Einleitung und der Aufbau der Arbeit. Was der Jury dann noch fehlt, sind eigene Messungen und eine ehrliche Abgrenzung.</p>
+<div class="two">
+  <div class="box"><h4>Forschungsfrage und Messreihen</h4>
+    <p><i>Wie zuverlässig erkennt ein 3-Euro-Magnetometer ein parkendes Auto, und wie weit trägt seine Meldung mit den erlaubten 10 mW durch eine Wohnstraße?</i></p>
+    <ul>
+      <li><b>Magnetsignatur:</b> Abweichung |B| je Position unter und neben 3 bis 5 Autos, dazu Störer (Nachbarlücke, Fahrrad, Einkaufswagen). Ergebnis: Diagramm mit Fehlerbalken, begründete Schwelle.</li>
+      <li><b>Reichweite:</b> RSSI und SNR über Entfernung, Boden gegen 1 m Höhe, Spreizfaktor 7 gegen 9. Ergebnis: Reichweitenkarte der eigenen Straße.</li>
+      <li><b>Langzeit:</b> 48 h an einer echten Lücke mit Handprotokoll. Ergebnis: Trefferquote, Fehlalarme, Drift über Tag und Nacht.</li>
+      <li><b>Energie:</b> Schlaf- und Sendestrom messen, mit dem Rechner aus Kapitel 4 vergleichen.</li>
+    </ul>
+  </div>
+  <div class="box"><h4>Eigenständigkeit und Rahmen</h4>
+    <ul>
+      <li>Server, App und Gateway-Skript wurden mit KI-Unterstützung bereitgestellt. Das steht unter „Unterstützung durch Dritte“; die Jury fragt danach.</li>
+      <li>Seine Arbeit: Fragestellung, Inbetriebnahme der Funkstrecke, alle Messungen und ihre Auswertung, die Aufgaben an den Agenten samt Prüfung, mindestens eine eigene Änderung an der Firmware (Deep Sleep ist der Kandidat), Arbeit, Poster, Vortrag.</li>
+      <li>Sparte Jugend forscht (ab 15), Fachgebiet Technik. Anmeldung bis 30. November, schriftliche Arbeit (max. 15 Seiten) Mitte Januar, Regionalwettbewerb Februar/März. Termine des zuständigen Regionalwettbewerbs prüfen.</li>
+      <li>Produkt und Wettbewerb trennen: Gehäuse, Stückzahl, LoRaWAN sind Ausblick, nicht Umfang.</li>
+    </ul>
+  </div>
+</div>
+
+<h3>Lernaufwand gesamt</h3>
+<div class="tw"><table>
+<thead><tr><th>Kapitel</th><th>Aufwand</th><th>Kern</th></tr></thead>
+<tbody>
+<tr><td class="t">1 Erkennungswege</td><td class="n">6 h</td><td class="d">Recherche, Nutzwerttabelle</td></tr>
+<tr><td class="t">2 Sensorprinzip, Magnetphysik</td><td class="n">14 h</td><td class="d">Erdfeld, Vektorbetrag, Datenblatt, Hysterese</td></tr>
+<tr><td class="t">3 Funk</td><td class="n">12 h</td><td class="d">Wellenlänge, Dezibel, Regeln, Duty Cycle</td></tr>
+<tr><td class="t">4 Sensorknoten, Energie</td><td class="n">10 h</td><td class="d">Elektrik, Strom messen, Energiebudget</td></tr>
+<tr><td class="t">5 Mikrocontroller hands-on</td><td class="n">30 h</td><td class="d">Werkbank, Anschließen, Sketch lesen, Aufgaben stellen</td></tr>
+<tr><td class="t">6 Gateway, Server, Daten</td><td class="n">10 h</td><td class="d">HTTP, API, Datenbankbegriffe</td></tr>
+<tr><td class="t">7 Fahrer und Betreiber</td><td class="n">8 h</td><td class="d">Rollen, Anforderungen, Web, Geo</td></tr>
+<tr><td class="t">8 Softwareprozess</td><td class="n">15 h</td><td class="d">Kommandozeile, Git, Python lesen, Tests</td></tr>
+<tr><td class="t">9 Messen, Schreiben, Präsentieren</td><td class="n">50 h</td><td class="d">Messreihen auswerten, 15 Seiten, Poster, Jurygespräch</td></tr>
+<tr class="sum"><td>Gesamt</td><td class="n">≈ 155 h</td><td>plus etwa 40 h reine Bastelzeit (Löten, Funktest, Feldaufbau). Bei 8 h je Woche ein halbes Jahr.</td></tr>
+</tbody></table></div>
+
+<footer>Grundlage: Repo <code>parkplatzdetektor</code>, Stand der Commits vom 30. Juli 2026. Preise und Stromwerte sind Größenordnungen aus Datenblättern und Händlerangaben, keine Messungen. JuFo-Fristen für den zuständigen Regionalwettbewerb auf jugend-forscht.de gegenprüfen.</footer>
+</div>
+<script src="app.js"></script>
