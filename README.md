@@ -1,71 +1,69 @@
 # Parkassistent
 
-Freie Parklücken am Straßenrand finden, ohne im Kreis zu fahren.
+Prototyp, der freie Parklücken anzeigt: ein Magnetsensor je Lücke meldet
+„belegt“ oder „frei“, ein Server sammelt die Meldungen, eine Web-App zeigt die
+nächsten freien Lücken und übergibt die gewählte an die Navi-App.
+Schulprojekt für Jugend forscht.
 
-Die Idee: **jede Parklücke bekommt einen Magnetsensor.** Ein Auto besteht aus
-so viel Eisen, dass es das Erdmagnetfeld messbar verzerrt — daran erkennt ein
-billiger Sensor unter dem Fahrzeug zuverlässig „belegt" oder „frei", ganz ohne
-Kamera und ohne Bild. Die Sensoren melden **über LoRa** an ein Gateway, das
-Gateway bündelt die Meldungen und schickt sie an den **Server**. Die App im
-Auto fragt dort nach den nächsten freien Lücken und übergibt die gewählte ans
-Navi.
+Ein Auto verzerrt das Erdmagnetfeld messbar; ein Magnetometer unter dem
+Fahrzeug erkennt daran die Belegung, ohne Kamera. Die Sensoren sollen per LoRa
+an ein Gateway melden, das die Meldungen an den Server weitergibt. LoRa wurde
+gewählt, weil ein Sensor am Bordstein kein WLAN hat und nur bei
+Zustandswechsel sendet; ein Stromsparbetrieb (Schlafmodus) ist im
+Sensor-Sketch noch nicht umgesetzt.
 
 ```
 Magnetsensor je Lücke  --LoRa-->  Gateway  --HTTPS-->  Server  <--HTTPS--  App
- ESP32-C3 + GY-271                bündelt            Flask + SQLite       PWA
+ ESP32-C3 + GY-271                                    Flask + SQLite       Web-App
    hardware/carsensor             gateway/              server/         server/app
 ```
-
-Warum LoRa: ein Sensor am Bordstein hat keinen Strom und kein WLAN. LoRa
-kommt mit Batterie und Kilometern Reichweite aus, und weil nur bei
-Zustandswechsel gesendet wird, bleibt die Datenmenge winzig.
-
-Schulprojekt für Jugend forscht.
 
 ## Aufbau des Repos
 
 | Pfad | Inhalt |
 |---|---|
-| [`server/`](server/README.md) | **Hauptteil.** API-Server, Fahrer-App und Verwaltungsseite. Flask + SQLite, läuft auf PythonAnywhere. |
-| [`gateway/`](gateway/README.md) | Der Weg vom Funk ins Netz: LoRa-Empfänger am USB-Anschluss und die Software, die seine Meldungen an den Server weitergibt. |
-| [`hardware/carsensor/`](hardware/carsensor/carsensor.ino) | Der Stellplatzsensor: ESP32-C3 + GY-271-Magnetometer, mit Kalibrierung und Feldversuch über ein Captive Portal. Sendet per LoRa. |
-| [`hardware/espnow_cam/`](hardware/espnow_cam/README.md) | Bildstrecke ESP32-CAM → ESP-NOW → Browser. Entstanden als Werkzeug, um überhaupt ein Bild vom Parkplatz zu bekommen. |
-| [`kamera/`](kamera/README.md) | Vorversuch: freie Plätze aus **einem** Luftbild zählen (Raster fitten + YOLO). Zeigt die Alternative ohne Sensor je Bucht. |
+| [`server/`](server/README.md) | Hauptteil: API-Server, Fahrer-App (`/app`) und Verwaltungsseite (`/admin`). Flask + SQLite, für PythonAnywhere eingerichtet. |
+| [`gateway/`](gateway/README.md) | LoRa-Empfänger (ESP32-C3 + SX1278, Sketch) und `gateway.py`, das dessen Meldungen über die serielle Schnittstelle liest und an den Server schickt. |
+| [`hardware/carsensor/`](hardware/carsensor/carsensor.ino) | Stellplatzsensor: ESP32-C3 + GY-271 (QMC5883L/QMC5883P/HMC5883L), Kalibrierung und Feldversuch über ein Captive Portal, optional LoRa (SX1278, 433,5 MHz). |
+| [`hardware/espnow_cam/`](hardware/espnow_cam/README.md) | Bildübertragung ESP32-CAM → ESP-NOW → Browser, Hilfswerkzeug für Aufnahmen vom Parkplatz. |
+| [`kamera/`](kamera/README.md) | Vorversuch: freie Plätze aus einem Drohnenbild zählen (Raster fitten + YOLO). |
 | [`PROJEKT_PROMPT.md`](PROJEKT_PROMPT.md) | Ziel, Architektur, API-Vertrag, Randbedingungen, offene Fragen. |
-| `docs/` | Recherchenotizen. |
+| `docs/` | Linksammlung der Recherche, Lernpfad (HTML), Datenblatt QMC5883L. |
 
 ## Stand
 
-Läuft: <https://vheinitz.pythonanywhere.com> — App unter `/app`,
-Verwaltung unter `/admin`, API unter `/api/v1`. In der Datenbank stehen
-146 Testsensoren (Rheinstraße Wiesbaden, Mikroforumring Wendelsheim,
-ein Demo-Parkplatz).
-
 | Teil | Zustand |
 |---|---|
-| Server, API, Datenbank | fertig, 24 Tests |
-| Fahrer-App (Karte, Umkreissuche, Ziel-Wächter) | fertig |
-| Verwaltungsseite | fertig |
-| Magnetsensor: Erkennung belegt/frei | funktioniert am Tisch |
-| Gateway-Software auf dem Rechner | fertig, 23 Tests, gegen den Server durchgespielt |
-| LoRa-Sender und -Empfänger (Sketches) | übersetzen für den ESP32-C3, aber **noch nie gefunkt** — die Module sind unterwegs |
-| Kamera-Vorversuch | abgeschlossen, 490 Plätze in ~1,5 s |
+| Server, API, Datenbank | läuft, 24 Tests (`server/test_api.py`) |
+| Fahrer-App (Karte, Umkreissuche, Ziel-Wächter) | läuft |
+| Verwaltungsseite | läuft |
+| Magnetsensor: Erkennung belegt/frei | am Tisch erprobt, nicht im Feld |
+| `gateway.py` | 23 Tests (`gateway/test_gateway.py`), mit `--replay` gegen den Server durchgespielt |
+| LoRa-Sender und -Empfänger (Sketches) | kompilieren für den ESP32-C3, Funkstrecke noch nicht erprobt |
+| Kamera-Vorversuch | abgeschlossen; Video, Einzelbilder und YOLO-Gewichte sind nicht im Repo |
 
-Die Rechnerseite des Wegs vom Sensor zum Server steht also und lässt sich mit
-einem Mitschnitt vorführen (`gateway.py --replay`). Was fehlt, ist der erste
-Versuch mit den SX1278-Modulen auf 433 MHz. Bis dahin füttert weiterhin
-`server/simulate_gateway.py` den Server — der merkt den Unterschied nicht, für
-ihn ist beides derselbe `POST /api/v1/events`.
+Bis zum ersten Funkversuch mit den SX1278-Modulen ersetzt
+`server/simulate_gateway.py` das Gateway; beide nutzen denselben
+`POST /api/v1/events`.
+
+Eine Instanz läuft unter <https://vheinitz.pythonanywhere.com> (App unter
+`/app`, API unter `/api/v1`).
 
 ## Schnellstart
 
 ```bash
 cd server
-python3 flask_app.py                  # lokal auf :5000
-python3 seed.py                       # Demo-Plätze anlegen
-python3 simulate_gateway.py           # Sensoren simulieren
-python3 -m pytest test_api.py -q      # Tests
+pip3 install --user Flask
+python3 flask_app.py                  # Server auf http://127.0.0.1:5000
+# in einem zweiten Terminal:
+python3 seed.py                       # 40 Demo-Plätze anlegen
+python3 simulate_gateway.py           # Sensoren simulieren, Strg-C beendet
+python3 test_api.py                   # Tests, eigene Test-Datenbank
 ```
 
-Dann <http://127.0.0.1:5000/app> öffnen. Einzelheiten, Deployment und der
-API-Vertrag stehen in [`server/README.md`](server/README.md).
+Dann <http://127.0.0.1:5000/app> öffnen. Deployment, API und Einstellungen
+stehen in [`server/README.md`](server/README.md).
+
+## Lizenz
+
+[MIT](LICENSE)

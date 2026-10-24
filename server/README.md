@@ -25,7 +25,7 @@ pip3 install --user Flask
 python3 flask_app.py                       # http://127.0.0.1:5000
 python3 seed.py                            # 40 Demo-Plätze anlegen + Startstatus
 python3 simulate_gateway.py                # Sensoren simulieren, Strg-C beendet
-python3 test_api.py                        # 15 Selbsttests, eigene Test-DB
+python3 test_api.py                        # 24 Selbsttests, eigene Test-DB
 ```
 
 Danach in einem dritten Terminal:
@@ -49,10 +49,11 @@ curl "http://127.0.0.1:5000/api/v1/spots/nearby?lat=48.1351&lng=11.5820&radius=2
 
 ## Die Fahrer-App (`/app`)
 
-Eine einzelne HTML-Datei, vom selben Server ausgeliefert — gleiche Herkunft wie
-die API, also kein CORS, und die Standortabfrage im Browser bekommt das nötige
-HTTPS vom Host geschenkt. Kein Build, kein SDK, kein App-Store, keine
-Fremdinhalte (kein CDN, keine Karten-Bibliothek).
+Eine HTML-Datei, vom selben Server ausgeliefert — gleiche Herkunft wie die
+API, also kein CORS, und die Standortabfrage im Browser bekommt das nötige
+HTTPS vom Host. Kein Build, kein App-Store. Die Karte nutzt Leaflet (lokal
+unter `app/vendor/`) mit Kacheln von `tile.openstreetmap.org`; ohne Leaflet
+zeigt die App nur die Liste.
 
 - Standort per `watchPosition`, neu geladen erst ab 25 m Bewegung — sonst feuert
   jedes GPS-Zucken eine Anfrage.
@@ -152,10 +153,8 @@ Nachmessen.
    `git clone <repo> parkassistent`
 3. **Web** → *Add a new web app* → *Manual configuration* → *Python 3.10+*.
    Nicht „Flask" wählen, sonst wird eine eigene App-Datei angelegt.
-4. In der Bash-Konsole:
-   ```bash
-   pip3 install --user Flask
-   ```
+4. Flask ist auf PythonAnywhere vorinstalliert (geprüft mit Python 3.13);
+   falls nicht: `pip3 install --user Flask` in der Bash-Konsole.
 5. **Web** → *WSGI configuration file* anklicken, Inhalt komplett durch
    `wsgi_pythonanywhere.py` ersetzen und `<benutzer>` sowie die beiden
    Schlüssel eintragen. Schlüssel erzeugen:
@@ -199,9 +198,6 @@ Die Datenbank liegt eine Ebene über dem Code-Ordner und wird nie angefasst.
 **Ein Schritt bleibt manuell**, einmalig: die Web-App anlegen (Web-Tab →
 *Manual configuration* → Python 3.x). Das geht über keine API. Danach läuft
 alles über das Skript.
-
-`pip3 install --user Flask` war entgegen der Anleitung oben **nicht nötig** —
-Flask ist auf PythonAnywhere vorinstalliert (getestet mit Python 3.13).
 
 ### Was auf PythonAnywhere zu beachten ist
 
@@ -255,12 +251,14 @@ schaltet auch das Ereignis-Log ab.
 | `PARKING_DB` | `server/parking.sqlite3` | Pfad der Datenbank |
 | `PARKING_ADMIN_KEY` | `dev-admin-key` | **im Betrieb ändern** |
 | `PARKING_GATEWAY_KEY` | `dev-gateway-key` | **im Betrieb ändern** |
+| `PARKING_ADMIN_USER` / `PARKING_ADMIN_PASSWORD` | `admin` / `adminpp` | Anmeldung der Verwaltungsseite `/admin`, gibt den Admin-Schlüssel aus — **im Betrieb ändern** |
 | `PARKING_STALE_AFTER_S` | `900` | ab wann ein Wert als veraltet gilt |
 | `PARKING_DEFAULT_RADIUS_M` | `500` | Vorgabe-Suchradius |
 | `PARKING_MAX_RADIUS_M` | `5000` | Obergrenze Suchradius |
 | `PARKING_DEFAULT_LIMIT` / `MAX_LIMIT` | `20` / `200` | Trefferzahl |
 | `PARKING_KEEP_EVENTS` | `1` | Ereignis-Log an/aus |
 | `PARKING_MAX_CLOCK_SKEW_S` | `300` | erlaubter Uhrvorlauf der Sensoren |
+| `PARKING_AHEAD_HALF_ANGLE`, `PARKING_U_TURN_M`, `PARKING_CROSS_M` | `90`, `150`, `80` | richtungsabhängige Bewertung, nur wenn die App `heading` mitschickt |
 
 `/api/v1/health` warnt, solange die Entwicklungsschlüssel aktiv sind.
 

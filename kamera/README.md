@@ -33,6 +33,11 @@ deshalb gilt **ein** Raster für alle Frames.
 | `draw_grid.py` | Raster zeichnen → `overlay/` |
 | `export_slots.py` | Ausschnitte exportieren → `slots/` |
 
+`video.webm`, `frames/`, `overlay/`, `slots/` und `models/` sind per
+`.gitignore` ausgeschlossen und nicht im Repository; das Video muss von der
+Quelle oben geladen, die Gewichte über `ultralytics` bezogen werden. Die
+Zahlen unten sind deshalb aus dem Repo allein nicht nachprüfbar.
+
 ```bash
 python3 detect.py bild.jpg            # Prototyp, zeigt das Ergebnis direkt an
 python3 fit_grid.py                   # Raster neu bestimmen -> grid.json

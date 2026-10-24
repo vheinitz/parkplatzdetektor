@@ -1,12 +1,11 @@
 # ESP32-CAM → ESP-NOW → USB → Browser
 
 Bildübertragung ohne Router, Repeater, DHCP oder ARP. Entstanden, weil die
-Kamera über das WLAN `ABYRVALG` nicht nutzbar erreichbar war: Sie assoziiert
-sich am stärksten Zugangspunkt, und das ist ein Repeater
-(`08:B6:57:A5:47:57`), der den ESP32 nicht zum restlichen Netz durchbridged —
-ARP vom Rechner aus bleibt erfolglos. Die FRITZ!Box selbst
-(`50:E6:36:CD:1E:51`) ist am Standort der Kamera nur mit −87 dBm zu hören,
-also zu schwach.
+Kamera über das vorhandene WLAN nicht nutzbar erreichbar war: Sie assoziiert
+sich am stärksten Zugangspunkt, und das ist ein Repeater, der den ESP32 nicht
+zum restlichen Netz durchbridged — ARP vom Rechner aus bleibt erfolglos. Der
+Router selbst ist am Standort der Kamera nur mit −87 dBm zu hören, also zu
+schwach.
 
 ## Aufbau
 
